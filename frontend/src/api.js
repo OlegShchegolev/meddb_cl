@@ -44,18 +44,34 @@ export default {
     return api.delete(`/mammographies/${id}`)
   },
 
+  // Mammography Findings
+  createMammographyFinding(data) {
+    return api.post('/mammography-findings/', data)
+  },
+  getMammographyFindings(mammoId) {
+    return api.get(`/mammography-findings/${mammoId}`)
+  },
+  deleteMammographyFinding(id) {
+    return api.delete(`/mammography-findings/${id}`)
+  },
+
+  // Contrast Mammographies
+  getContrastMammographies(params = {}) {
+    return api.get('/contrast-mammographies/', { params })
+  },
+  createContrastMammography(data) {
+    return api.post('/contrast-mammographies/', data)
+  },
+  deleteContrastMammography(id) {
+    return api.delete(`/contrast-mammographies/${id}`)
+  },
+
   // Ultrasounds
   getUltrasounds(params = {}) {
     return api.get('/ultrasounds/', { params })
   },
-  getUltrasound(id) {
-    return api.get(`/ultrasounds/${id}`)
-  },
   createUltrasound(data) {
     return api.post('/ultrasounds/', data)
-  },
-  updateUltrasound(id, data) {
-    return api.put(`/ultrasounds/${id}`, data)
   },
   deleteUltrasound(id) {
     return api.delete(`/ultrasounds/${id}`)
@@ -65,24 +81,43 @@ export default {
   getMRTs(params = {}) {
     return api.get('/mrts/', { params })
   },
-  getMRT(id) {
-    return api.get(`/mrts/${id}`)
-  },
   createMRT(data) {
     return api.post('/mrts/', data)
-  },
-  updateMRT(id, data) {
-    return api.put(`/mrts/${id}`, data)
   },
   deleteMRT(id) {
     return api.delete(`/mrts/${id}`)
   },
 
-  // Export
-  exportData(tableName, params = {}) {
-    return api.get(`/export/${tableName}`, {
-      params,
-      responseType: 'blob'
-    })
+  // Histology Biopsies
+  getHistologyBiopsies(params = {}) {
+    return api.get('/histology-biopsies/', { params })
+  },
+  createHistologyBiopsy(data) {
+    return api.post('/histology-biopsies/', data)
+  },
+  deleteHistologyBiopsy(id) {
+    return api.delete(`/histology-biopsies/${id}`)
+  },
+
+  // Cytology Biopsies
+  getCytologyBiopsies(params = {}) {
+    return api.get('/cytology-biopsies/', { params })
+  },
+  createCytologyBiopsy(data) {
+    return api.post('/cytology-biopsies/', data)
+  },
+  deleteCytologyBiopsy(id) {
+    return api.delete(`/cytology-biopsies/${id}`)
+  },
+
+  // Histology Postops
+  getHistologyPostops(params = {}) {
+    return api.get('/histology-postops/', { params })
+  },
+  createHistologyPostop(data) {
+    return api.post('/histology-postops/', data)
+  },
+  deleteHistologyPostop(id) {
+    return api.delete(`/histology-postops/${id}`)
   }
 }

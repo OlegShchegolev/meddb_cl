@@ -2,12 +2,9 @@
   <div id="app">
     <nav class="navbar">
       <div class="nav-container">
-        <h1 class="logo">Медицинская база данных</h1>
+        <h1 class="logo">Система управления медицинскими данными</h1>
         <div class="nav-links">
           <router-link to="/patients" class="nav-link">Пациенты</router-link>
-          <router-link to="/mammographies" class="nav-link">Маммография</router-link>
-          <router-link to="/ultrasounds" class="nav-link">УЗИ</router-link>
-          <router-link to="/mrts" class="nav-link">МРТ</router-link>
         </div>
       </div>
     </nav>
@@ -26,7 +23,7 @@
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;
@@ -58,7 +55,7 @@
 }
 
 .main-content {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 2rem auto;
   padding: 0 2rem;
 }
