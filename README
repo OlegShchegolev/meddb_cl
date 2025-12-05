@@ -1,0 +1,213 @@
+# Medical Data Management System
+
+A complete medical data management system with Vue 3 frontend, FastAPI backend, and PostgreSQL database.
+
+## Project Structure
+
+```
+medical-app/
+├── docker-compose.yml
+├── backend/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── main.py
+│   ├── database.py
+│   └── schemas.py
+└── frontend/
+    ├── Dockerfile
+    ├── package.json
+    ├── vite.config.js
+    ├── index.html
+    └── src/
+        ├── main.js
+        ├── App.vue
+        ├── api.js
+        └── components/
+            ├── Patients.vue
+            ├── PatientDetail.vue
+            ├── Mammographies.vue
+            ├── Ultrasounds.vue
+            └── MRTs.vue
+```
+
+## Setup Instructions
+
+### 1. Create Directory Structure
+
+```bash
+mkdir medical-app
+cd medical-app
+mkdir backend frontend
+mkdir frontend/src
+mkdir frontend/src/components
+```
+
+### 2. Backend Files
+
+Create the following files in the `backend/` directory:
+- `Dockerfile`
+- `requirements.txt`
+- `main.py`
+- `database.py`
+- `schemas.py`
+
+### 3. Frontend Files
+
+Create the following files:
+
+**Root frontend files:**
+- `frontend/Dockerfile`
+- `frontend/package.json`
+- `frontend/vite.config.js`
+- `frontend/index.html`
+
+**In frontend/src/:**
+- `frontend/src/main.js`
+- `frontend/src/App.vue`
+- `frontend/src/api.js`
+
+**In frontend/src/components/:**
+- `frontend/src/components/Patients.vue`
+- `frontend/src/components/PatientDetail.vue`
+- `frontend/src/components/Mammographies.vue`
+- `frontend/src/components/Ultrasounds.vue`
+- `frontend/src/components/MRTs.vue`
+
+### 4. Docker Compose
+
+Place `docker-compose.yml` in the root `medical-app/` directory.
+
+## Running the Application
+
+### Start all services:
+
+```bash
+docker-compose up -d
+```
+
+### Access the application:
+
+- **Frontend:** http://localhost:3000
+- **Backend API:** http://localhost:8000
+- **API Docs:** http://localhost:8000/docs
+
+### Stop all services:
+
+```bash
+docker-compose down
+```
+
+## Features
+
+### Patient Management
+- Add, edit, view, and delete patient records
+- Filter patients by name
+- Export patient data to Excel
+
+### Medical Examinations
+All linked to patient records via patient_id:
+
+1. **Mammographies**
+   - Track breast density, BIRADS scores, and findings
+   - Filter by patient ID and date range
+
+2. **Ultrasounds**
+   - Record organ examinations, measurements, and findings
+   - Filter by patient ID, date range, and organ
+
+3. **MRTs**
+   - Document body part scans, contrast usage, and impressions
+   - Filter by patient ID, date range, and body part
+
+### Data Export
+- Export any table to Excel format
+- Apply filters before export
+- Download filtered results
+
+## Database Schema
+
+### Patients Table
+- id (PK)
+- first_name, last_name
+- date_of_birth, gender
+- email, phone, address
+
+### Mammographies Table
+- id (PK)
+- patient_id (FK → patients.id)
+- exam_date
+- breast_density, findings, birads_score, notes
+
+### Ultrasounds Table
+- id (PK)
+- patient_id (FK → patients.id)
+- exam_date
+- organ, findings, measurements, notes
+
+### MRTs Table
+- id (PK)
+- patient_id (FK → patients.id)
+- exam_date
+- body_part, contrast_used, findings, impression, notes
+
+## Development
+
+### Backend Development
+
+```bash
+# Access backend container
+docker exec -it medical_backend bash
+
+# View logs
+docker logs medical_backend -f
+```
+
+### Frontend Development
+
+```bash
+# Access frontend container
+docker exec -it medical_frontend sh
+
+# View logs
+docker logs medical_frontend -f
+```
+
+### Database Access
+
+```bash
+# Access PostgreSQL
+docker exec -it medical_db psql -U medical_user -d medical_db
+```
+
+## API Endpoints
+
+### Patients
+- `GET /patients/` - List all patients (with filters)
+- `GET /patients/{id}` - Get patient with all medical data
+- `POST /patients/` - Create new patient
+- `PUT /patients/{id}` - Update patient
+- `DELETE /patients/{id}` - Delete patient
+
+### Mammographies
+- `GET /mammographies/` - List with filters
+- `GET /mammographies/{id}` - Get specific record
+- `POST /mammographies/` - Create new
+- `PUT /mammographies/{id}` - Update
+- `DELETE /mammographies/{id}` - Delete
+
+### Ultrasounds
+- Similar endpoints as Mammographies
+
+### MRTs
+- Similar endpoints as Mammographies
+
+### Export
+- `GET /export/{table_name}` - Export data to Excel
+
+## Notes
+
+- All dates are in ISO format (YYYY-MM-DD)
+- Deleting a patient cascades to all their medical records
+- The backend uses SQLAlchemy ORM with PostgreSQL
+- The frontend uses Vue 3 Composition API with Vue Router
+- CORS is enabled for local development
