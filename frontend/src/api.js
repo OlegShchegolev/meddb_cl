@@ -1,6 +1,24 @@
 import axios from 'axios'
 
-const API_BASE = 'http://localhost:8000'
+// Определяем базовый URL в зависимости от окружения
+const getApiBaseUrl = () => {
+  // Если есть переменная окружения, используем её
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  
+  // Автоматическое определение
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://localhost:8000'
+  }
+  
+  // Для удаленного сервера используем текущий хост с портом 8000
+  return `http://${window.location.hostname}:8000`
+}
+
+const API_BASE = getApiBaseUrl()
+
+console.log('API Base URL:', API_BASE) // Для отладки
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -26,7 +44,7 @@ export default {
   deletePatient(id) {
     return api.delete(`/patients/${id}`)
   },
-
+  
   // Mammographies
   getMammographies(params = {}) {
     return api.get('/mammographies/', { params })
@@ -65,7 +83,7 @@ export default {
   deleteContrastMammography(id) {
     return api.delete(`/contrast-mammographies/${id}`)
   },
-
+  
   // Ultrasounds
   getUltrasounds(params = {}) {
     return api.get('/ultrasounds/', { params })
@@ -76,7 +94,7 @@ export default {
   deleteUltrasound(id) {
     return api.delete(`/ultrasounds/${id}`)
   },
-
+  
   // MRTs
   getMRTs(params = {}) {
     return api.get('/mrts/', { params })
