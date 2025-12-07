@@ -69,6 +69,9 @@ export default {
   getMammographyFindings(mammoId) {
     return api.get(`/mammography-findings/${mammoId}`)
   },
+  updateMammographyFinding(id, data) {
+    return api.put(`/mammography-findings/${id}`, data)
+  },
   deleteMammographyFinding(id) {
     return api.delete(`/mammography-findings/${id}`)
   },
@@ -97,6 +100,9 @@ export default {
   getContrastMammoLEFindings(mammoId) {
     return api.get(`/contrast-mammo-le-findings/${mammoId}`)
   },
+  updateContrastMammoLEFinding(id, data) {
+    return api.put(`/contrast-mammo-le-findings/${id}`, data)
+  },
   deleteContrastMammoLEFinding(id) {
     return api.delete(`/contrast-mammo-le-findings/${id}`)
   },
@@ -107,6 +113,9 @@ export default {
   },
   getContrastMammoRCFindings(mammoId) {
     return api.get(`/contrast-mammo-rc-findings/${mammoId}`)
+  },
+  updateContrastMammoRCFinding(id, data) {
+    return api.put(`/contrast-mammo-rc-findings/${id}`, data)
   },
   deleteContrastMammoRCFinding(id) {
     return api.delete(`/contrast-mammo-rc-findings/${id}`)

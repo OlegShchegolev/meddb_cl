@@ -146,6 +146,17 @@ def create_finding(finding: schemas.MammographyFindingCreate, db: Session = Depe
 def get_findings(mammo_id: int, db: Session = Depends(database.get_db)):
     return db.query(database.MammographyFinding).filter(database.MammographyFinding.mammography_id == mammo_id).all()
 
+@app.put("/mammography-findings/{finding_id}", response_model=schemas.MammographyFinding)
+def update_finding(finding_id: int, finding: schemas.MammographyFindingCreate, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.MammographyFinding).filter(database.MammographyFinding.id == finding_id).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
 @app.delete("/mammography-findings/{finding_id}")
 def delete_finding(finding_id: int, db: Session = Depends(database.get_db)):
     db_finding = db.query(database.MammographyFinding).filter(database.MammographyFinding.id == finding_id).first()
@@ -222,6 +233,19 @@ def get_le_findings(mammo_id: int, db: Session = Depends(database.get_db)):
         database.ContrastMammographyLEFinding.contrast_mammo_id == mammo_id
     ).all()
 
+@app.put("/contrast-mammo-le-findings/{finding_id}", response_model=schemas.ContrastMammographyLEFinding)
+def update_le_finding(finding_id: int, finding: schemas.ContrastMammographyLEFindingCreate, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.ContrastMammographyLEFinding).filter(
+        database.ContrastMammographyLEFinding.id == finding_id
+    ).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
 @app.delete("/contrast-mammo-le-findings/{finding_id}")
 def delete_le_finding(finding_id: int, db: Session = Depends(database.get_db)):
     finding = db.query(database.ContrastMammographyLEFinding).filter(
@@ -247,6 +271,19 @@ def get_rc_findings(mammo_id: int, db: Session = Depends(database.get_db)):
     return db.query(database.ContrastMammographyRCFinding).filter(
         database.ContrastMammographyRCFinding.contrast_mammo_id == mammo_id
     ).all()
+
+@app.put("/contrast-mammo-rc-findings/{finding_id}", response_model=schemas.ContrastMammographyRCFinding)
+def update_rc_finding(finding_id: int, finding: schemas.ContrastMammographyRCFindingCreate, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.ContrastMammographyRCFinding).filter(
+        database.ContrastMammographyRCFinding.id == finding_id
+    ).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
 
 @app.delete("/contrast-mammo-rc-findings/{finding_id}")
 def delete_rc_finding(finding_id: int, db: Session = Depends(database.get_db)):

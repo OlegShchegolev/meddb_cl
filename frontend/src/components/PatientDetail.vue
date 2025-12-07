@@ -74,6 +74,7 @@
               <th>Сторона</th>
               <th>BI-RADS</th>
               <th>ACR</th>
+              <th>Находки</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -84,7 +85,11 @@
               <td>{{ item.affected_side }}</td>
               <td>{{ item.birads_category }}</td>
               <td>{{ item.acr_density }}</td>
-              <td><button @click="deleteMammo(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>{{ item.findings?.length || 0 }}</td>
+              <td>
+                <button @click="viewMammoFindings(item)" class="btn-sm btn-info">Находки</button>
+                <button @click="deleteMammo(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -106,6 +111,8 @@
               <th>BI-RADS</th>
               <th>ACR</th>
               <th>BPE</th>
+              <th>Находки LE</th>
+              <th>Находки RC</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -117,8 +124,10 @@
               <td>{{ item.birads_category }}</td>
               <td>{{ item.acr_density }}</td>
               <td>{{ item.bpe_level }}</td>
+              <td>{{ item.le_findings?.length || 0 }}</td>
+              <td>{{ item.rc_findings?.length || 0 }}</td>
               <td>
-                <button @click="viewContrastDetails(item)" class="btn-sm btn-info">Просмотр</button>
+                <button @click="viewContrastDetails(item)" class="btn-sm btn-info">Находки</button>
                 <button @click="deleteContrast(item.id)" class="btn-sm btn-danger">Удалить</button>
               </td>
             </tr>
@@ -439,13 +448,34 @@
       @close="showHistPostopModal = false"
       @save="saveHistPostop"
     />
+    <!-- Модал находок маммографии -->
+    <MammographyFindingsModal
+      v-if="selectedMammography"
+      :mammography="selectedMammography"
+      @close="selectedMammography = null"
+      @updated="loadPatient"
+    />
+
+    <!-- Модал контрастной маммографии -->
+    <ContrastMammographyModal
+      v-if="selectedContrastMammo"
+      :contrast-mammo="selectedContrastMammo"
+      @close="selectedContrastMammo = null"
+      @updated="loadPatient"
+    />
   </div>
 </template>
 
 <script>
 import api from '../api'
+import MammographyFindingsModal from './MammographyFindingsModal.vue'
+import ContrastMammographyModal from './ContrastMammographyModal.vue'
 
 export default {
+  components: {
+    MammographyFindingsModal,
+    ContrastMammographyModal
+  },
   data() {
     return {
       patient: null,
@@ -466,6 +496,8 @@ export default {
       showHistBiopsyModal: false,
       showCytoModal: false,
       showHistPostopModal: false,
+      selectedMammography: null,
+      selectedContrastMammo: null,
       ultrasoundForm: { exam_date: '', findings: '', comment: '' },
       mammoForm: {
         exam_date: '',
@@ -542,6 +574,9 @@ export default {
         this.loadPatient()
       }
     },
+    viewMammoFindings(mammography) {
+      this.selectedMammography = mammography
+    },
     async saveContrast() {
       try {
         await api.createContrastMammography({ ...this.contrastForm, patient_id: this.patient.id })
@@ -564,7 +599,7 @@ export default {
       }
     },
     viewContrastDetails(item) {
-      alert('Детальный просмотр с находками будет реализован в следующей версии')
+      this.selectedContrastMammo = item
     },
     async deleteContrast(id) {
       if (confirm('Удалить запись?')) {
