@@ -15,13 +15,14 @@ class Patient(Base):
     __tablename__ = "patients"
 
     id = Column(String(50), primary_key=True, index=True)
-    snils = Column(String(14), unique=True, index=True)  # Format: XXX-XXX-XXX XX
+    snils = Column(String(14), unique=True, index=True)
     last_name = Column(String(100), nullable=False)
     first_name = Column(String(100), nullable=False)
     middle_name = Column(String(100))
     gender = Column(String(20), nullable=False)
     date_of_birth = Column(Date, nullable=False)
     diagnosis = Column(Text)
+    tnm_stage = Column(String(100))  # Новое поле: Стадия по TNM
     comment = Column(Text)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -90,10 +91,88 @@ class ContrastMammography(Base):
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
-    findings = Column(Text)
+    study_stage = Column(Integer)  # Этап исследования 1-9
+    affected_side = Column(String(50))  # Сторона поражения
+    birads_category = Column(String(10))  # BI-RADS
+    acr_density = Column(String(10))  # Плотность по ACR
+    bpe_level = Column(String(50))  # Степень фонового контрастирования паренхимы (BPE)
+    bpe_symmetry = Column(String(50))  # Симметрия фонового контрастирования
+    comparison_available = Column(Boolean, default=False)  # Сравнение с предыдущими
+    dynamics = Column(String(100))  # Динамика
     comment = Column(Text)
 
     patient = relationship("Patient", back_populates="contrast_mammographies")
+    le_findings = relationship("ContrastMammographyLEFinding", back_populates="contrast_mammo",
+                               cascade="all, delete-orphan")
+    rc_findings = relationship("ContrastMammographyRCFinding", back_populates="contrast_mammo",
+                               cascade="all, delete-orphan")
+
+
+class ContrastMammographyLEFinding(Base):
+    """Находки на LE (Low Energy) при контрастной маммографии"""
+    __tablename__ = "contrast_mammo_le_findings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
+    finding_number = Column(Integer)  # 1-9
+    quadrant_location = Column(String(50))
+    depth_location = Column(String(50))
+    finding_type = Column(String(100))  # Тип находки на LE
+
+    # Для объемного образования
+    mass_shape = Column(String(50))
+    mass_margin = Column(String(50))
+    mass_density = Column(String(50))
+
+    # Для асимметрии
+    asymmetry_type = Column(String(50))
+
+    # Для кальцинатов
+    calcification_malignancy = Column(String(50))
+    calcification_morphology = Column(String(100))
+    calcification_distribution = Column(String(50))
+
+    # Для сопутствующих изменений
+    associated_features = Column(Text)  # Список с множественным выбором (JSON)
+
+    size_mm = Column(String(50))  # Размеры
+
+    # Определяется ли на RC
+    visible_on_rc = Column(String(10))  # Да/Нет
+    rc_internal_enhancement = Column(String(50))  # Паттерн внутреннего контрастирования
+    rc_enhancement_degree = Column(String(50))  # Степень контрастирования
+    rc_enhancement_intensity = Column(String(50))  # Интенсивность контрастирования
+
+    contrast_mammo = relationship("ContrastMammography", back_populates="le_findings")
+
+
+class ContrastMammographyRCFinding(Base):
+    """Находки на RC (Recombined), не определяющиеся на LE"""
+    __tablename__ = "contrast_mammo_rc_findings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
+    finding_number = Column(Integer)  # 1-9
+    quadrant_location = Column(String(50))
+    depth_location = Column(String(50))
+    finding_type = Column(String(100))  # Тип находки на RC
+
+    # Для объемного образования
+    mass_shape = Column(String(50))
+    mass_margin = Column(String(50))
+    enhancement_characteristic = Column(String(50))  # Характеристика контрастирования
+
+    # Для зоны контрастирования без образования
+    distribution = Column(String(50))
+    internal_enhancement_pattern = Column(String(50))  # Паттерн внутреннего усиления
+
+    # Для зоны асимметричного контрастирования
+    asymmetric_enhancement_pattern = Column(String(50))
+
+    size_mm = Column(String(50))  # Размеры
+    enhancement_intensity = Column(String(50))  # Интенсивность контрастирования
+
+    contrast_mammo = relationship("ContrastMammography", back_populates="rc_findings")
 
 
 class Ultrasound(Base):

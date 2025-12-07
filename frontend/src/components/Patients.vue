@@ -83,6 +83,10 @@
             <textarea v-model="form.diagnosis" class="input" rows="3"></textarea>
           </div>
           <div class="form-group">
+            <label>Стадия по TNM</label>
+            <input v-model="form.tnm_stage" class="input" placeholder="Например: T2N1M0">
+          </div>
+          <div class="form-group">
             <label>Комментарий</label>
             <textarea v-model="form.comment" class="input" rows="3"></textarea>
           </div>
@@ -119,6 +123,7 @@ export default {
         gender: '',
         date_of_birth: '',
         diagnosis: '',
+        tnm_stage: '',
         comment: ''
       }
     }
@@ -140,7 +145,7 @@ export default {
     },
     editPatient(patient) {
       this.editingPatient = patient.id
-      this.form = {...patient}
+      this.form = { ...patient }
     },
     async savePatient() {
       try {
@@ -177,6 +182,7 @@ export default {
         gender: '',
         date_of_birth: '',
         diagnosis: '',
+        tnm_stage: '',
         comment: ''
       }
     },
@@ -210,7 +216,7 @@ export default {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -302,7 +308,7 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0,0,0,0.5);
   display: flex;
   justify-content: center;
   align-items: center;

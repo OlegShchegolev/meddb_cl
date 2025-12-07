@@ -77,13 +77,41 @@ export default {
   getContrastMammographies(params = {}) {
     return api.get('/contrast-mammographies/', { params })
   },
+  getContrastMammography(id) {
+    return api.get(`/contrast-mammographies/${id}`)
+  },
   createContrastMammography(data) {
     return api.post('/contrast-mammographies/', data)
+  },
+  updateContrastMammography(id, data) {
+    return api.put(`/contrast-mammographies/${id}`, data)
   },
   deleteContrastMammography(id) {
     return api.delete(`/contrast-mammographies/${id}`)
   },
-  
+
+  // Contrast Mammography LE Findings
+  createContrastMammoLEFinding(data) {
+    return api.post('/contrast-mammo-le-findings/', data)
+  },
+  getContrastMammoLEFindings(mammoId) {
+    return api.get(`/contrast-mammo-le-findings/${mammoId}`)
+  },
+  deleteContrastMammoLEFinding(id) {
+    return api.delete(`/contrast-mammo-le-findings/${id}`)
+  },
+
+  // Contrast Mammography RC Findings
+  createContrastMammoRCFinding(data) {
+    return api.post('/contrast-mammo-rc-findings/', data)
+  },
+  getContrastMammoRCFindings(mammoId) {
+    return api.get(`/contrast-mammo-rc-findings/${mammoId}`)
+  },
+  deleteContrastMammoRCFinding(id) {
+    return api.delete(`/contrast-mammo-rc-findings/${id}`)
+  },
+
   // Ultrasounds
   getUltrasounds(params = {}) {
     return api.get('/ultrasounds/', { params })
@@ -94,7 +122,7 @@ export default {
   deleteUltrasound(id) {
     return api.delete(`/ultrasounds/${id}`)
   },
-  
+
   // MRTs
   getMRTs(params = {}) {
     return api.get('/mrts/', { params })

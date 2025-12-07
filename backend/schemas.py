@@ -12,6 +12,7 @@ class PatientBase(BaseModel):
     gender: str
     date_of_birth: date
     diagnosis: Optional[str] = None
+    tnm_stage: Optional[str] = None  # Новое поле
     comment: Optional[str] = None
 
 
@@ -24,6 +25,7 @@ class PatientCreate(BaseModel):
     gender: str
     date_of_birth: date
     diagnosis: Optional[str] = None
+    tnm_stage: Optional[str] = None  # Новое поле
     comment: Optional[str] = None
 
 
@@ -97,10 +99,78 @@ class Mammography(MammographyBase):
         from_attributes = True
 
 
+# Contrast Mammography LE Finding Schemas
+class ContrastMammographyLEFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    finding_type: Optional[str] = None
+    mass_shape: Optional[str] = None
+    mass_margin: Optional[str] = None
+    mass_density: Optional[str] = None
+    asymmetry_type: Optional[str] = None
+    calcification_malignancy: Optional[str] = None
+    calcification_morphology: Optional[str] = None
+    calcification_distribution: Optional[str] = None
+    associated_features: Optional[str] = None
+    size_mm: Optional[str] = None
+    visible_on_rc: Optional[str] = None
+    rc_internal_enhancement: Optional[str] = None
+    rc_enhancement_degree: Optional[str] = None
+    rc_enhancement_intensity: Optional[str] = None
+
+
+class ContrastMammographyLEFindingCreate(ContrastMammographyLEFindingBase):
+    contrast_mammo_id: int
+
+
+class ContrastMammographyLEFinding(ContrastMammographyLEFindingBase):
+    id: int
+    contrast_mammo_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Contrast Mammography RC Finding Schemas
+class ContrastMammographyRCFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    finding_type: Optional[str] = None
+    mass_shape: Optional[str] = None
+    mass_margin: Optional[str] = None
+    enhancement_characteristic: Optional[str] = None
+    distribution: Optional[str] = None
+    internal_enhancement_pattern: Optional[str] = None
+    asymmetric_enhancement_pattern: Optional[str] = None
+    size_mm: Optional[str] = None
+    enhancement_intensity: Optional[str] = None
+
+
+class ContrastMammographyRCFindingCreate(ContrastMammographyRCFindingBase):
+    contrast_mammo_id: int
+
+
+class ContrastMammographyRCFinding(ContrastMammographyRCFindingBase):
+    id: int
+    contrast_mammo_id: int
+
+    class Config:
+        from_attributes = True
+
+
 # Contrast Mammography Schemas
 class ContrastMammographyBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
+    study_stage: Optional[int] = None
+    affected_side: Optional[str] = None
+    birads_category: Optional[str] = None
+    acr_density: Optional[str] = None
+    bpe_level: Optional[str] = None
+    bpe_symmetry: Optional[str] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
     comment: Optional[str] = None
 
 
@@ -111,6 +181,8 @@ class ContrastMammographyCreate(ContrastMammographyBase):
 class ContrastMammography(ContrastMammographyBase):
     id: int
     patient_id: str
+    le_findings: List[ContrastMammographyLEFinding] = []
+    rc_findings: List[ContrastMammographyRCFinding] = []
 
     class Config:
         from_attributes = True

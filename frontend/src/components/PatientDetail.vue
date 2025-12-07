@@ -13,6 +13,7 @@
         <div><strong>Дата рождения:</strong> {{ patient.date_of_birth }}</div>
         <div><strong>Пол:</strong> {{ patient.gender }}</div>
         <div><strong>Диагноз:</strong> {{ patient.diagnosis }}</div>
+        <div><strong>Стадия по TNM:</strong> {{ patient.tnm_stage }}</div>
         <div><strong>Последнее обновление:</strong> {{ formatDateTime(patient.last_updated) }}</div>
       </div>
       <div v-if="patient.comment" style="margin-top: 1rem">
@@ -100,17 +101,26 @@
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Заключение</th>
-              <th>Комментарий</th>
+              <th>Этап</th>
+              <th>Сторона</th>
+              <th>BI-RADS</th>
+              <th>ACR</th>
+              <th>BPE</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in patient.contrast_mammographies" :key="item.id">
               <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.comment }}</td>
-              <td><button @click="deleteContrast(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>{{ item.study_stage }}</td>
+              <td>{{ item.affected_side }}</td>
+              <td>{{ item.birads_category }}</td>
+              <td>{{ item.acr_density }}</td>
+              <td>{{ item.bpe_level }}</td>
+              <td>
+                <button @click="viewContrastDetails(item)" class="btn-sm btn-info">Просмотр</button>
+                <button @click="deleteContrast(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -312,14 +322,91 @@
       </div>
     </div>
 
-    <!-- Остальные модальные окна аналогично -->
-    <SimpleModal
-      v-if="showContrastModal"
-      title="Добавить контрастную маммографию"
-      :form="contrastForm"
-      @close="showContrastModal = false"
-      @save="saveContrast"
-    />
+    <!-- Modal Контрастная маммография -->
+    <div v-if="showContrastModal" class="modal" @click.self="showContrastModal = false">
+      <div class="modal-content modal-large">
+        <h3>Добавить контрастную маммографию</h3>
+        <form @submit.prevent="saveContrast">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Дата исследования *</label>
+              <input v-model="contrastForm.exam_date" type="date" required class="input">
+            </div>
+            <div class="form-group">
+              <label>Этап исследования (1-9)</label>
+              <input v-model.number="contrastForm.study_stage" type="number" min="1" max="9" class="input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Сторона поражения</label>
+              <select v-model="contrastForm.affected_side" class="input">
+                <option value="">Выберите</option>
+                <option value="Правая">Правая</option>
+                <option value="Левая">Левая</option>
+                <option value="Обе">Обе</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Категория BI-RADS</label>
+              <select v-model="contrastForm.birads_category" class="input">
+                <option value="">Выберите</option>
+                <option value="0">BI-RADS 0</option>
+                <option value="1">BI-RADS 1</option>
+                <option value="2">BI-RADS 2</option>
+                <option value="3">BI-RADS 3</option>
+                <option value="4">BI-RADS 4</option>
+                <option value="5">BI-RADS 5</option>
+                <option value="6">BI-RADS 6</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Плотность по ACR</label>
+              <select v-model="contrastForm.acr_density" class="input">
+                <option value="">Выберите</option>
+                <option value="A">ACR A</option>
+                <option value="B">ACR B</option>
+                <option value="C">ACR C</option>
+                <option value="D">ACR D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Степень фонового контрастирования (BPE)</label>
+              <select v-model="contrastForm.bpe_level" class="input">
+                <option value="">Выберите</option>
+                <option value="Минимальная">Минимальная</option>
+                <option value="Слабая">Слабая</option>
+                <option value="Умеренная">Умеренная</option>
+                <option value="Выраженная">Выраженная</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Симметрия фонового контрастирования</label>
+            <select v-model="contrastForm.bpe_symmetry" class="input">
+              <option value="">Выберите</option>
+              <option value="Симметричная">Симметричная</option>
+              <option value="Асимметричная">Асимметричная</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Комментарий</label>
+            <textarea v-model="contrastForm.comment" class="input" rows="3"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="showContrastModal = false" class="btn btn-secondary">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <SimpleModal
       v-if="showMRTModal"
@@ -388,7 +475,18 @@ export default {
         acr_density: '',
         comment: ''
       },
-      contrastForm: { exam_date: '', findings: '', comment: '' },
+      contrastForm: {
+        exam_date: '',
+        study_stage: null,
+        affected_side: '',
+        birads_category: '',
+        acr_density: '',
+        bpe_level: '',
+        bpe_symmetry: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
+      },
       mrtForm: { exam_date: '', findings: '', comment: '' },
       histBiopsyForm: { exam_date: '', findings: '', ihc_results: '', comment: '' },
       cytoForm: { exam_date: '', findings: '', comment: '' },
@@ -445,9 +543,28 @@ export default {
       }
     },
     async saveContrast() {
-      await api.createContrastMammography({ ...this.contrastForm, patient_id: this.patient.id })
-      this.showContrastModal = false
-      this.loadPatient()
+      try {
+        await api.createContrastMammography({ ...this.contrastForm, patient_id: this.patient.id })
+        this.showContrastModal = false
+        this.contrastForm = {
+          exam_date: '',
+          study_stage: null,
+          affected_side: '',
+          birads_category: '',
+          acr_density: '',
+          bpe_level: '',
+          bpe_symmetry: '',
+          comparison_available: false,
+          dynamics: '',
+          comment: ''
+        }
+        this.loadPatient()
+      } catch (error) {
+        alert('Ошибка сохранения')
+      }
+    },
+    viewContrastDetails(item) {
+      alert('Детальный просмотр с находками будет реализован в следующей версии')
     },
     async deleteContrast(id) {
       if (confirm('Удалить запись?')) {
@@ -524,6 +641,8 @@ export default {
 .btn-danger { background: #dc3545; color: white; }
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
 .modal-content { background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+.modal-large { max-width: 800px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .form-group { margin-bottom: 1rem; }
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
 .input { padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; width: 100%; }
