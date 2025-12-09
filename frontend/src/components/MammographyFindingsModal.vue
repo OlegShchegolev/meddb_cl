@@ -42,7 +42,7 @@
 
       <!-- Модальное окно добавления/редактирования находки -->
       <div v-if="showAddFinding" class="modal inner-modal" @click.self="closeAddModal">
-        <div class="modal-content modal-large">
+        <div class="modal-content modal-large inner-modal-content">
           <h4>{{ editingFinding ? 'Редактировать находку' : 'Добавить находку' }}</h4>
           <form @submit.prevent="saveFinding">
             <div class="form-row">
@@ -334,6 +334,12 @@ export default {
 
 .inner-modal {
   z-index: 1002 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.inner-modal-content {
+  background: white !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
 }
 
 .modal-xlarge {
@@ -401,6 +407,7 @@ export default {
   padding: 0.5rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
+  background: white;
 }
 
 .checkbox-label {
@@ -497,6 +504,7 @@ export default {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: 500;
+  color: #212529;
 }
 
 .input {
@@ -504,6 +512,7 @@ export default {
   border: 1px solid #ced4da;
   border-radius: 4px;
   width: 100%;
+  background: white;
 }
 
 .form-actions {
