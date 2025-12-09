@@ -332,6 +332,10 @@ export default {
   z-index: 1001;
 }
 
+.findings-modal > .modal-content {
+  background: white;
+}
+
 .inner-modal {
   z-index: 1002 !important;
   background: rgba(0, 0, 0, 0.7) !important;
@@ -344,10 +348,12 @@ export default {
 
 .modal-xlarge {
   max-width: 1000px;
+  background: white;
 }
 
 .modal-large {
   max-width: 800px;
+  background: white;
 }
 
 .modal-header {
