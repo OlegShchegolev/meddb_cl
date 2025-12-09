@@ -334,6 +334,8 @@ export default {
 
 .findings-modal > .modal-content {
   background: white;
+  padding: 2rem;
+  border-radius: 8px;
 }
 
 .inner-modal {
@@ -344,16 +346,22 @@ export default {
 .inner-modal-content {
   background: white !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  padding: 2rem !important;
+  border-radius: 8px !important;
 }
 
 .modal-xlarge {
   max-width: 1000px;
   background: white;
+  padding: 2rem;
+  border-radius: 8px;
 }
 
 .modal-large {
   max-width: 800px;
   background: white;
+  padding: 2rem;
+  border-radius: 8px;
 }
 
 .modal-header {
