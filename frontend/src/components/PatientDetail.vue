@@ -53,7 +53,10 @@
               <td>{{ item.exam_date }}</td>
               <td>{{ item.findings }}</td>
               <td>{{ item.comment }}</td>
-              <td><button @click="deleteUltrasound(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>
+                <button @click="editUltrasound(item)" class="btn-sm btn-warning">Редактировать</button>
+                <button @click="deleteUltrasound(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -88,6 +91,7 @@
               <td>{{ item.findings?.length || 0 }}</td>
               <td>
                 <button @click="viewMammoFindings(item)" class="btn-sm btn-info">Находки</button>
+                <button @click="editMammo(item)" class="btn-sm btn-warning">Редактировать</button>
                 <button @click="deleteMammo(item.id)" class="btn-sm btn-danger">Удалить</button>
               </td>
             </tr>
@@ -128,6 +132,7 @@
               <td>{{ item.rc_findings?.length || 0 }}</td>
               <td>
                 <button @click="viewContrastDetails(item)" class="btn-sm btn-info">Находки</button>
+                <button @click="editContrast(item)" class="btn-sm btn-warning">Редактировать</button>
                 <button @click="deleteContrast(item.id)" class="btn-sm btn-danger">Удалить</button>
               </td>
             </tr>
@@ -250,9 +255,9 @@
     </div>
 
     <!-- Modal УЗИ -->
-    <div v-if="showUltrasoundModal" class="modal" @click.self="showUltrasoundModal = false">
+    <div v-if="showUltrasoundModal || editingUltrasound" class="modal" @click.self="closeUltrasoundModal">
       <div class="modal-content">
-        <h3>Добавить УЗИ</h3>
+        <h3>{{ editingUltrasound ? 'Редактировать УЗИ' : 'Добавить УЗИ' }}</h3>
         <form @submit.prevent="saveUltrasound">
           <div class="form-group">
             <label>Дата исследования *</label>
@@ -267,7 +272,7 @@
             <textarea v-model="ultrasoundForm.comment" class="input" rows="2"></textarea>
           </div>
           <div class="form-actions">
-            <button type="button" @click="showUltrasoundModal = false" class="btn btn-secondary">Отмена</button>
+            <button type="button" @click="closeUltrasoundModal" class="btn btn-secondary">Отмена</button>
             <button type="submit" class="btn btn-primary">Сохранить</button>
           </div>
         </form>
@@ -275,9 +280,9 @@
     </div>
 
     <!-- Modal Маммография (упрощенная) -->
-    <div v-if="showMammoModal" class="modal" @click.self="showMammoModal = false">
+    <div v-if="showMammoModal || editingMammo" class="modal" @click.self="closeMammoModal">
       <div class="modal-content">
-        <h3>Добавить маммографию</h3>
+        <h3>{{ editingMammo ? 'Редактировать маммографию' : 'Добавить маммографию' }}</h3>
         <form @submit.prevent="saveMammo">
           <div class="form-group">
             <label>Дата исследования *</label>
@@ -324,7 +329,7 @@
             <textarea v-model="mammoForm.comment" class="input" rows="3"></textarea>
           </div>
           <div class="form-actions">
-            <button type="button" @click="showMammoModal = false" class="btn btn-secondary">Отмена</button>
+            <button type="button" @click="closeMammoModal" class="btn btn-secondary">Отмена</button>
             <button type="submit" class="btn btn-primary">Сохранить</button>
           </div>
         </form>
@@ -332,9 +337,9 @@
     </div>
 
     <!-- Modal Контрастная маммография -->
-    <div v-if="showContrastModal" class="modal" @click.self="showContrastModal = false">
+    <div v-if="showContrastModal || editingContrast" class="modal" @click.self="closeContrastModal">
       <div class="modal-content modal-large">
-        <h3>Добавить контрастную маммографию</h3>
+        <h3>{{ editingContrast ? 'Редактировать контрастную маммографию' : 'Добавить контрастную маммографию' }}</h3>
         <form @submit.prevent="saveContrast">
           <div class="form-row">
             <div class="form-group">
@@ -410,7 +415,7 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" @click="showContrastModal = false" class="btn btn-secondary">Отмена</button>
+            <button type="button" @click="closeContrastModal" class="btn btn-secondary">Отмена</button>
             <button type="submit" class="btn btn-primary">Сохранить</button>
           </div>
         </form>
@@ -498,6 +503,13 @@ export default {
       showHistPostopModal: false,
       selectedMammography: null,
       selectedContrastMammo: null,
+      editingMammo: null,
+      editingContrast: null,
+      editingUltrasound: null,
+      editingMRT: null,
+      editingHistBiopsy: null,
+      editingCyto: null,
+      editingHistPostop: null,
       ultrasoundForm: { exam_date: '', findings: '', comment: '' },
       mammoForm: {
         exam_date: '',
@@ -544,13 +556,26 @@ export default {
     },
     async saveUltrasound() {
       try {
-        await api.createUltrasound({ ...this.ultrasoundForm, patient_id: this.patient.id })
-        this.showUltrasoundModal = false
-        this.ultrasoundForm = { exam_date: '', findings: '', comment: '' }
+        if (this.editingUltrasound) {
+          await api.updateUltrasound(this.editingUltrasound, { ...this.ultrasoundForm, patient_id: this.patient.id })
+        } else {
+          await api.createUltrasound({ ...this.ultrasoundForm, patient_id: this.patient.id })
+        }
+        this.closeUltrasoundModal()
         this.loadPatient()
       } catch (error) {
         alert('Ошибка сохранения')
       }
+    },
+    editUltrasound(item) {
+      this.editingUltrasound = item.id
+      this.ultrasoundForm = { ...item }
+      this.showUltrasoundModal = true
+    },
+    closeUltrasoundModal() {
+      this.showUltrasoundModal = false
+      this.editingUltrasound = null
+      this.ultrasoundForm = { exam_date: '', findings: '', comment: '' }
     },
     async deleteUltrasound(id) {
       if (confirm('Удалить запись?')) {
@@ -560,12 +585,32 @@ export default {
     },
     async saveMammo() {
       try {
-        await api.createMammography({ ...this.mammoForm, patient_id: this.patient.id })
-        this.showMammoModal = false
-        this.mammoForm = { exam_date: '', study_stage: null, affected_side: '', birads_category: '', acr_density: '', comment: '' }
+        if (this.editingMammo) {
+          await api.updateMammography(this.editingMammo, { ...this.mammoForm, patient_id: this.patient.id })
+        } else {
+          await api.createMammography({ ...this.mammoForm, patient_id: this.patient.id })
+        }
+        this.closeMammoModal()
         this.loadPatient()
       } catch (error) {
         alert('Ошибка сохранения')
+      }
+    },
+    editMammo(item) {
+      this.editingMammo = item.id
+      this.mammoForm = { ...item }
+      this.showMammoModal = true
+    },
+    closeMammoModal() {
+      this.showMammoModal = false
+      this.editingMammo = null
+      this.mammoForm = {
+        exam_date: '',
+        study_stage: null,
+        affected_side: '',
+        birads_category: '',
+        acr_density: '',
+        comment: ''
       }
     },
     async deleteMammo(id) {
@@ -579,23 +624,36 @@ export default {
     },
     async saveContrast() {
       try {
-        await api.createContrastMammography({ ...this.contrastForm, patient_id: this.patient.id })
-        this.showContrastModal = false
-        this.contrastForm = {
-          exam_date: '',
-          study_stage: null,
-          affected_side: '',
-          birads_category: '',
-          acr_density: '',
-          bpe_level: '',
-          bpe_symmetry: '',
-          comparison_available: false,
-          dynamics: '',
-          comment: ''
+        if (this.editingContrast) {
+          await api.updateContrastMammography(this.editingContrast, { ...this.contrastForm, patient_id: this.patient.id })
+        } else {
+          await api.createContrastMammography({ ...this.contrastForm, patient_id: this.patient.id })
         }
+        this.closeContrastModal()
         this.loadPatient()
       } catch (error) {
         alert('Ошибка сохранения')
+      }
+    },
+    editContrast(item) {
+      this.editingContrast = item.id
+      this.contrastForm = { ...item }
+      this.showContrastModal = true
+    },
+    closeContrastModal() {
+      this.showContrastModal = false
+      this.editingContrast = null
+      this.contrastForm = {
+        exam_date: '',
+        study_stage: null,
+        affected_side: '',
+        birads_category: '',
+        acr_density: '',
+        bpe_level: '',
+        bpe_symmetry: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
       }
     },
     viewContrastDetails(item) {

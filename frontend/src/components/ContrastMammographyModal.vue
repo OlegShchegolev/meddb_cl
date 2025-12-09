@@ -103,7 +103,7 @@
       </div>
 
       <!-- Модал добавления LE находки -->
-      <div v-if="showAddLEFinding" class="modal" @click.self="showAddLEFinding = false">
+      <div v-if="showAddLEFinding" class="modal inner-modal" @click.self="showAddLEFinding = false">
         <div class="modal-content modal-large">
           <h4>Добавить находку LE</h4>
           <form @submit.prevent="saveLEFinding">
@@ -219,7 +219,7 @@
       </div>
 
       <!-- Модал добавления RC находки -->
-      <div v-if="showAddRCFinding" class="modal" @click.self="showAddRCFinding = false">
+      <div v-if="showAddRCFinding" class="modal inner-modal" @click.self="showAddRCFinding = false">
         <div class="modal-content modal-large">
           <h4>Добавить находку RC</h4>
           <form @submit.prevent="saveRCFinding">
@@ -505,6 +505,10 @@ export default {
 <style scoped>
 .findings-modal {
   z-index: 1001;
+}
+
+.inner-modal {
+  z-index: 1002 !important;
 }
 
 .modal {

@@ -128,6 +128,9 @@ export default {
   createUltrasound(data) {
     return api.post('/ultrasounds/', data)
   },
+  updateUltrasound(id, data) {
+    return api.put(`/ultrasounds/${id}`, data)
+  },
   deleteUltrasound(id) {
     return api.delete(`/ultrasounds/${id}`)
   },
@@ -138,6 +141,9 @@ export default {
   },
   createMRT(data) {
     return api.post('/mrts/', data)
+  },
+  updateMRT(id, data) {
+    return api.put(`/mrts/${id}`, data)
   },
   deleteMRT(id) {
     return api.delete(`/mrts/${id}`)
@@ -150,6 +156,9 @@ export default {
   createHistologyBiopsy(data) {
     return api.post('/histology-biopsies/', data)
   },
+  updateHistologyBiopsy(id, data) {
+    return api.put(`/histology-biopsies/${id}`, data)
+  },
   deleteHistologyBiopsy(id) {
     return api.delete(`/histology-biopsies/${id}`)
   },
@@ -161,6 +170,9 @@ export default {
   createCytologyBiopsy(data) {
     return api.post('/cytology-biopsies/', data)
   },
+  updateCytologyBiopsy(id, data) {
+    return api.put(`/cytology-biopsies/${id}`, data)
+  },
   deleteCytologyBiopsy(id) {
     return api.delete(`/cytology-biopsies/${id}`)
   },
@@ -171,6 +183,9 @@ export default {
   },
   createHistologyPostop(data) {
     return api.post('/histology-postops/', data)
+  },
+  updateHistologyPostop(id, data) {
+    return api.put(`/histology-postops/${id}`, data)
   },
   deleteHistologyPostop(id) {
     return api.delete(`/histology-postops/${id}`)

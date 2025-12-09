@@ -312,6 +312,17 @@ def get_ultrasounds(patient_id: Optional[str] = None, db: Session = Depends(data
         query = query.filter(database.Ultrasound.patient_id == patient_id)
     return query.all()
 
+@app.put("/ultrasounds/{item_id}", response_model=schemas.Ultrasound)
+def update_ultrasound(item_id: int, item: schemas.UltrasoundCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.Ultrasound).filter(database.Ultrasound.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
 @app.delete("/ultrasounds/{item_id}")
 def delete_ultrasound(item_id: int, db: Session = Depends(database.get_db)):
     item = db.query(database.Ultrasound).filter(database.Ultrasound.id == item_id).first()
@@ -336,6 +347,17 @@ def get_mrts(patient_id: Optional[str] = None, db: Session = Depends(database.ge
     if patient_id:
         query = query.filter(database.MRT.patient_id == patient_id)
     return query.all()
+
+@app.put("/mrts/{item_id}", response_model=schemas.MRT)
+def update_mrt(item_id: int, item: schemas.MRTCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.MRT).filter(database.MRT.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @app.delete("/mrts/{item_id}")
 def delete_mrt(item_id: int, db: Session = Depends(database.get_db)):
@@ -362,6 +384,17 @@ def get_histology_biopsies(patient_id: Optional[str] = None, db: Session = Depen
         query = query.filter(database.HistologyBiopsy.patient_id == patient_id)
     return query.all()
 
+@app.put("/histology-biopsies/{item_id}", response_model=schemas.HistologyBiopsy)
+def update_histology_biopsy(item_id: int, item: schemas.HistologyBiopsyCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.HistologyBiopsy).filter(database.HistologyBiopsy.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
 @app.delete("/histology-biopsies/{item_id}")
 def delete_histology_biopsy(item_id: int, db: Session = Depends(database.get_db)):
     item = db.query(database.HistologyBiopsy).filter(database.HistologyBiopsy.id == item_id).first()
@@ -387,6 +420,17 @@ def get_cytology_biopsies(patient_id: Optional[str] = None, db: Session = Depend
         query = query.filter(database.CytologyBiopsy.patient_id == patient_id)
     return query.all()
 
+@app.put("/cytology-biopsies/{item_id}", response_model=schemas.CytologyBiopsy)
+def update_cytology_biopsy(item_id: int, item: schemas.CytologyBiopsyCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.CytologyBiopsy).filter(database.CytologyBiopsy.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
 @app.delete("/cytology-biopsies/{item_id}")
 def delete_cytology_biopsy(item_id: int, db: Session = Depends(database.get_db)):
     item = db.query(database.CytologyBiopsy).filter(database.CytologyBiopsy.id == item_id).first()
@@ -411,6 +455,17 @@ def get_histology_postops(patient_id: Optional[str] = None, db: Session = Depend
     if patient_id:
         query = query.filter(database.HistologyPostop.patient_id == patient_id)
     return query.all()
+
+@app.put("/histology-postops/{item_id}", response_model=schemas.HistologyPostop)
+def update_histology_postop(item_id: int, item: schemas.HistologyPostopCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.HistologyPostop).filter(database.HistologyPostop.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @app.delete("/histology-postops/{item_id}")
 def delete_histology_postop(item_id: int, db: Session = Depends(database.get_db)):
