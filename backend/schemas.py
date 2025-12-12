@@ -60,7 +60,9 @@ class MammographyFindingBase(BaseModel):
     size_x_mm: Optional[int] = None  # Размеры
     size_y_mm: Optional[int] = None  # Размеры
     size_z_mm: Optional[int] = None  # Размеры
-    # volume_mm3: Optional[int] = None # Размеры
+    volume_mm3: Optional[int] = None # Размеры
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
 
 
 class MammographyFindingCreate(MammographyFindingBase):
@@ -121,7 +123,9 @@ class ContrastMammographyLEFindingBase(BaseModel):
     size_x_mm: Optional[int] = None  # Размеры
     size_y_mm: Optional[int] = None  # Размеры
     size_z_mm: Optional[int] = None  # Размеры
-    # volume_mm3: Optional[int] = None  # Размеры
+    volume_mm3: Optional[int] = None  # Размеры
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
     visible_on_rc: Optional[str] = None
     rc_internal_enhancement: Optional[str] = None
     rc_enhancement_degree: Optional[str] = None
@@ -155,7 +159,9 @@ class ContrastMammographyRCFindingBase(BaseModel):
     size_x_mm: Optional[int] = None  # Размеры
     size_y_mm: Optional[int] = None  # Размеры
     size_z_mm: Optional[int] = None  # Размеры
-    # volume_mm3: Optional[int] = None  # Размеры
+    volume_mm3: Optional[int] = None  # Размеры
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
     enhancement_intensity: Optional[str] = None
 
 

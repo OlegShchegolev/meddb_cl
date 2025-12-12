@@ -59,7 +59,7 @@ class MammographyFinding(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     mammography_id = Column(Integer, ForeignKey("mammographies.id"), nullable=False)
-    finding_number = Column(Integer)  # 1-9
+    finding_number = Column(Integer, nullable=True)  # 1-9
     quadrant_location = Column(String(50))  # Верхне-внутренний, Верхне-наружный и т.д.
     depth_location = Column(String(50))  # Передняя треть, Средняя треть, Задняя треть
     finding_type = Column(String(100))  # Объемное образование, Асимметрия, Кальцинаты, Сопутствующие изменения
@@ -84,7 +84,9 @@ class MammographyFinding(Base):
     size_x_mm = Column(Integer)   # Размеры
     size_y_mm = Column(Integer)   # Размеры
     size_z_mm = Column(Integer)   # Размеры
-    # volume_mm3 = Column(Integer)  # Размеры
+    volume_mm3 = Column(Integer)  # Размеры
+    size_max_mm = Column(Integer)
+    size_min_mm = Column(Integer)
 
     mammography = relationship("Mammography", back_populates="findings")
 
@@ -118,7 +120,7 @@ class ContrastMammographyLEFinding(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
-    finding_number = Column(Integer)  # 1-9
+    finding_number = Column(Integer, nullable=True)  # 1-9
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
     finding_type = Column(String(100))  # Тип находки на LE
@@ -142,7 +144,9 @@ class ContrastMammographyLEFinding(Base):
     size_x_mm = Column(Integer)   # Размеры
     size_y_mm = Column(Integer)   # Размеры
     size_z_mm = Column(Integer)   # Размеры
-    # volume_mm3 = Column(Integer)  # Размеры
+    volume_mm3 = Column(Integer)  # Размеры
+    size_max_mm = Column(Integer)
+    size_min_mm = Column(Integer)
 
     # Определяется ли на RC
     visible_on_rc = Column(String(10))  # Да/Нет
@@ -159,7 +163,7 @@ class ContrastMammographyRCFinding(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
-    finding_number = Column(Integer)  # 1-9
+    finding_number = Column(Integer, nullable=True)  # 1-9
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
     finding_type = Column(String(100))  # Тип находки на RC
