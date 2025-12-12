@@ -168,7 +168,7 @@
               </div>
 
               <!-- Размеры -->
-              <div v-if="shouldShowSingleSizeField('le')" class="form-group">
+              <div v-if=false class="form-group">
                 <label>Размер (мм) *</label>
                 <input v-model.number="leFindingForm.size_x_mm" @input="copySizeForRoundMass('le')" type="number" min="1" required class="input">
                 <small class="text-muted">Для округлого образования все размеры будут одинаковыми</small>
