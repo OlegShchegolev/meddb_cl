@@ -57,7 +57,7 @@
               <td>{{ finding.finding_number }}</td>
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.finding_type }}</td>
-              <td>{{ finding.size_x_mm }}×{{ finding.size_y_mm }}×{{ finding.size_z_mm }}</td>
+              <td>{{ finding.size_mm }}</td>
               <td>{{ finding.visible_on_rc }}</td>
               <td>
                 <button @click="deleteLEFinding(finding.id)" class="btn-sm btn-danger">Удалить</button>
@@ -91,7 +91,7 @@
               <td>{{ finding.finding_number }}</td>
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.finding_type }}</td>
-              <td>{{ finding.size_x_mm }}×{{ finding.size_y_mm }}×{{ finding.size_z_mm }}</td>
+              <td>{{ finding.size_mm }}</td>
               <td>{{ finding.enhancement_intensity }}</td>
               <td>
                 <button @click="deleteRCFinding(finding.id)" class="btn-sm btn-danger">Удалить</button>
@@ -173,20 +173,18 @@
                 <input v-model.number="leFindingForm.size_x_mm" @input="copySizeForRoundMass('le')" type="number" min="1" required class="input">
                 <small class="text-muted">Для округлого образования все размеры будут одинаковыми</small>
               </div>
-              <div v-else>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Размер X (мм) *</label>
-                    <input v-model.number="leFindingForm.size_x_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
-                  </div>
-                  <div class="form-group">
-                    <label>Размер Y (мм) *</label>
-                    <input v-model.number="leFindingForm.size_y_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
-                  </div>
-                  <div class="form-group">
-                    <label>Размер Z (мм) *</label>
-                    <input v-model.number="leFindingForm.size_z_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
-                  </div>
+              <div v-else class="form-row">
+                <div class="form-group">
+                  <label>Размер X (мм) *</label>
+                  <input v-model.number="leFindingForm.size_x_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
+                </div>
+                <div class="form-group">
+                  <label>Размер Y (мм) *</label>
+                  <input v-model.number="leFindingForm.size_y_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
+                </div>
+                <div class="form-group">
+                  <label>Размер Z (мм) *</label>
+                  <input v-model.number="leFindingForm.size_z_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
                 </div>
               </div>
 
@@ -307,36 +305,10 @@
                     <option v-for="char in enhancementCharacteristics" :key="char" :value="char">{{ char }}</option>
                   </select>
                 </div>
-              </div>
-
-              <!-- Размеры -->
-              <div v-if="shouldShowSingleSizeField('rc')" class="form-group">
-                <label>Размер (мм) *</label>
-                <input v-model.number="rcFindingForm.size_x_mm" @input="copySizeForRoundMass('rc')" type="number" min="1" required class="input">
-                <small class="text-muted">Для округлого образования все размеры будут одинаковыми</small>
-              </div>
-              <div v-else>
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Размер X (мм) *</label>
-                    <input v-model.number="rcFindingForm.size_x_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                  </div>
-                  <div class="form-group">
-                    <label>Размер Y (мм) *</label>
-                    <input v-model.number="rcFindingForm.size_y_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                  </div>
-                  <div class="form-group">
-                    <label>Размер Z (мм) *</label>
-                    <input v-model.number="rcFindingForm.size_z_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                  </div>
+                <div class="form-group">
+                  <label>Размеры (мм) *</label>
+                  <input v-model="rcFindingForm.size_mm" placeholder="15x16x17" required class="input">
                 </div>
-              </div>
-
-              <!-- Рассчитанные параметры -->
-              <div v-if="rcFindingForm.size_x_mm && rcFindingForm.size_y_mm && rcFindingForm.size_z_mm" class="calculated-metrics">
-                <div><strong>Объём:</strong> {{ rcFindingForm.volume_mm3 }} мм³</div>
-                <div><strong>Макс. размер:</strong> {{ rcFindingForm.size_max_mm }} мм</div>
-                <div><strong>Мин. размер:</strong> {{ rcFindingForm.size_min_mm }} мм</div>
               </div>
             </div>
 
@@ -359,26 +331,9 @@
                   </select>
                 </div>
               </div>
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Размер X (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_x_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                </div>
-                <div class="form-group">
-                  <label>Размер Y (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_y_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                </div>
-                <div class="form-group">
-                  <label>Размер Z (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_z_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                </div>
-              </div>
-
-              <!-- Рассчитанные параметры -->
-              <div v-if="rcFindingForm.size_x_mm && rcFindingForm.size_y_mm && rcFindingForm.size_z_mm" class="calculated-metrics">
-                <div><strong>Объём:</strong> {{ rcFindingForm.volume_mm3 }} мм³</div>
-                <div><strong>Макс. размер:</strong> {{ rcFindingForm.size_max_mm }} мм</div>
-                <div><strong>Мин. размер:</strong> {{ rcFindingForm.size_min_mm }} мм</div>
+              <div class="form-group">
+                <label>Размеры (мм) *</label>
+                <input v-model="rcFindingForm.size_mm" placeholder="15x16x17" required class="input">
               </div>
             </div>
 
@@ -393,27 +348,10 @@
                     <option v-for="pattern in enhancementPatterns" :key="pattern" :value="pattern">{{ pattern }}</option>
                   </select>
                 </div>
-              </div>
-              <div class="form-row">
                 <div class="form-group">
-                  <label>Размер X (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_x_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
+                  <label>Размеры зоны (мм) *</label>
+                  <input v-model="rcFindingForm.size_mm" placeholder="15x16x17" required class="input">
                 </div>
-                <div class="form-group">
-                  <label>Размер Y (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_y_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                </div>
-                <div class="form-group">
-                  <label>Размер Z (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_z_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
-                </div>
-              </div>
-
-              <!-- Рассчитанные параметры -->
-              <div v-if="rcFindingForm.size_x_mm && rcFindingForm.size_y_mm && rcFindingForm.size_z_mm" class="calculated-metrics">
-                <div><strong>Объём:</strong> {{ rcFindingForm.volume_mm3 }} мм³</div>
-                <div><strong>Макс. размер:</strong> {{ rcFindingForm.size_max_mm }} мм</div>
-                <div><strong>Мин. размер:</strong> {{ rcFindingForm.size_min_mm }} мм</div>
               </div>
             </div>
 
@@ -484,12 +422,7 @@ export default {
         mass_shape: '',
         mass_margin: '',
         mass_density: '',
-        size_x_mm: null,
-        size_y_mm: null,
-        size_z_mm: null,
-        volume_mm3: null,
-        size_max_mm: null,
-        size_min_mm: null,
+        size_mm: '',
         visible_on_rc: '',
         rc_internal_enhancement: '',
         rc_enhancement_degree: '',
@@ -508,12 +441,7 @@ export default {
         distribution: '',
         internal_enhancement_pattern: '',
         asymmetric_enhancement_pattern: '',
-        size_x_mm: null,
-        size_y_mm: null,
-        size_z_mm: null,
-        volume_mm3: null,
-        size_max_mm: null,
-        size_min_mm: null,
+        size_mm: '',
         enhancement_intensity: ''
       }
     },
@@ -544,33 +472,280 @@ export default {
         finding_type: this.rcFindingForm.finding_type
       }
     },
-    shouldShowSingleSizeField(type) {
-      const form = type === 'le' ? this.leFindingForm : this.rcFindingForm
-      return form.finding_type === 'Объемное образование' && form.mass_shape === 'Округлая'
+    async saveLEFinding() {
+      try {
+        await api.createContrastMammoLEFinding({
+          ...this.leFindingForm,
+          contrast_mammo_id: this.contrastMammo.id
+        })
+        this.showAddLEFinding = false
+        this.leFindingForm = this.getEmptyLEForm()
+        this.loadFindings()
+        this.$emit('updated')
+      } catch (error) {
+        alert('Ошибка сохранения: ' + (error.response?.data?.detail || error.message))
+      }
     },
-    copySizeForRoundMass(type) {
-      const form = type === 'le' ? this.leFindingForm : this.rcFindingForm
-      if (this.shouldShowSingleSizeField(type) && form.size_x_mm) {
-        form.size_y_mm = form.size_x_mm
-        form.size_z_mm = form.size_x_mm
-        if (type === 'le') {
-          this.calculateLEMetrics()
-        } else {
-          this.calculateRCMetrics()
+    async saveRCFinding() {
+      try {
+        await api.createContrastMammoRCFinding({
+          ...this.rcFindingForm,
+          contrast_mammo_id: this.contrastMammo.id
+        })
+        this.showAddRCFinding = false
+        this.rcFindingForm = this.getEmptyRCForm()
+        this.loadFindings()
+        this.$emit('updated')
+      } catch (error) {
+        alert('Ошибка сохранения: ' + (error.response?.data?.detail || error.message))
+      }
+    },
+    async deleteLEFinding(id) {
+      if (confirm('Удалить находку LE?')) {
+        try {
+          await api.deleteContrastMammoLEFinding(id)
+          this.loadFindings()
+          this.$emit('updated')
+        } catch (error) {
+          alert('Ошибка удаления')
         }
       }
     },
-    calculateLEMetrics() {
-      const form = this.leFindingForm
-      if (form.size_x_mm && form.size_y_mm && form.size_z_mm) {
-        form.volume_mm3 = form.size_x_mm * form.size_y_mm * form.size_z_mm
-        const sizes = [form.size_x_mm, form.size_y_mm, form.size_z_mm]
-        form.size_max_mm = Math.max(...sizes)
-        form.size_min_mm = Math.min(...sizes)
+    async deleteRCFinding(id) {
+      if (confirm('Удалить находку RC?')) {
+        try {
+          await api.deleteContrastMammoRCFinding(id)
+          this.loadFindings()
+          this.$emit('updated')
+        } catch (error) {
+          alert('Ошибка удаления')
+        }
       }
-    },
-    calculateRCMetrics() {
-      const form = this.rcFindingForm
-      if (form.size_x_mm && form.size_y_mm && form.size_z_mm) {
-        form.volume_mm3 = form.size_x_mm * form.size_y_mm * form.size_z_mm
-        const sizes = [form.size_x_
+    }
+  }
+}
+</script>
+
+<style scoped>
+.findings-modal {
+  z-index: 1001;
+}
+
+.inner-modal {
+  z-index: 1002 !important;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-xlarge {
+  max-width: 1000px;
+}
+
+.modal-large {
+  max-width: 800px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: #6c757d;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  line-height: 1;
+}
+
+.btn-close:hover {
+  color: #000;
+}
+
+.info-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.tabs-section {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s;
+}
+
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+.findings-section {
+  margin-top: 1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.finding-details {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+}
+
+.finding-details h5 {
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.data-table th {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.no-data {
+  text-align: center;
+  padding: 2rem;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+  margin-right: 0.5rem;
+}
+
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.input {
+  padding: 0.5rem;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+</style>
