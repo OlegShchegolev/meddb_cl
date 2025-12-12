@@ -13,6 +13,7 @@ class PatientBase(BaseModel):
     date_of_birth: date
     diagnosis: Optional[str] = None
     tnm_stage: Optional[str] = None  # Новое поле
+    mkb_code: Optional[str] = None  # Новое поле
     comment: Optional[str] = None
 
 
@@ -26,6 +27,7 @@ class PatientCreate(BaseModel):
     date_of_birth: date
     diagnosis: Optional[str] = None
     tnm_stage: Optional[str] = None  # Новое поле
+    mkb_code: Optional[str] = None  # Новое поле
     comment: Optional[str] = None
 
 
@@ -55,7 +57,10 @@ class MammographyFindingBase(BaseModel):
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
     associated_feature: Optional[str] = None
-    size_mm: Optional[str] = None
+    size_x_mm: Optional[int] = None  # Размеры
+    size_y_mm: Optional[int] = None  # Размеры
+    size_z_mm: Optional[int] = None  # Размеры
+    # volume_mm3: Optional[int] = None # Размеры
 
 
 class MammographyFindingCreate(MammographyFindingBase):
@@ -113,7 +118,10 @@ class ContrastMammographyLEFindingBase(BaseModel):
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
     associated_features: Optional[str] = None
-    size_mm: Optional[str] = None
+    size_x_mm: Optional[int] = None  # Размеры
+    size_y_mm: Optional[int] = None  # Размеры
+    size_z_mm: Optional[int] = None  # Размеры
+    # volume_mm3: Optional[int] = None  # Размеры
     visible_on_rc: Optional[str] = None
     rc_internal_enhancement: Optional[str] = None
     rc_enhancement_degree: Optional[str] = None
@@ -144,7 +152,10 @@ class ContrastMammographyRCFindingBase(BaseModel):
     distribution: Optional[str] = None
     internal_enhancement_pattern: Optional[str] = None
     asymmetric_enhancement_pattern: Optional[str] = None
-    size_mm: Optional[str] = None
+    size_x_mm: Optional[int] = None  # Размеры
+    size_y_mm: Optional[int] = None  # Размеры
+    size_z_mm: Optional[int] = None  # Размеры
+    # volume_mm3: Optional[int] = None  # Размеры
     enhancement_intensity: Optional[str] = None
 
 

@@ -23,6 +23,7 @@ class Patient(Base):
     date_of_birth = Column(Date, nullable=False)
     diagnosis = Column(Text)
     tnm_stage = Column(String(100))  # Новое поле: Стадия по TNM
+    mkb_code = Column(String(100))  # Новое поле: Код по МКБ
     comment = Column(Text)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -80,7 +81,10 @@ class MammographyFinding(Base):
     associated_feature = Column(String(100))
 
     # Общие поля
-    size_mm = Column(String(50))  # Формат: "15x16x17"
+    size_x_mm = Column(Integer)   # Размеры
+    size_y_mm = Column(Integer)   # Размеры
+    size_z_mm = Column(Integer)   # Размеры
+    # volume_mm3 = Column(Integer)  # Размеры
 
     mammography = relationship("Mammography", back_populates="findings")
 
@@ -135,7 +139,10 @@ class ContrastMammographyLEFinding(Base):
     # Для сопутствующих изменений
     associated_features = Column(Text)  # Список с множественным выбором (JSON)
 
-    size_mm = Column(String(50))  # Размеры
+    size_x_mm = Column(Integer)   # Размеры
+    size_y_mm = Column(Integer)   # Размеры
+    size_z_mm = Column(Integer)   # Размеры
+    # volume_mm3 = Column(Integer)  # Размеры
 
     # Определяется ли на RC
     visible_on_rc = Column(String(10))  # Да/Нет
@@ -169,7 +176,12 @@ class ContrastMammographyRCFinding(Base):
     # Для зоны асимметричного контрастирования
     asymmetric_enhancement_pattern = Column(String(50))
 
-    size_mm = Column(String(50))  # Размеры
+    size_x_mm = Column(Integer)   # Размеры
+    size_y_mm = Column(Integer)   # Размеры
+    size_z_mm = Column(Integer)   # Размеры
+    volume_mm3 = Column(Integer)  # Размеры
+    size_max_mm = Column(Integer) # Размеры
+    size_min_mm = Column(Integer) # Размеры
     enhancement_intensity = Column(String(50))  # Интенсивность контрастирования
 
     contrast_mammo = relationship("ContrastMammography", back_populates="rc_findings")

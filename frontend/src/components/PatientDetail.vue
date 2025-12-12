@@ -14,6 +14,7 @@
         <div><strong>Пол:</strong> {{ patient.gender }}</div>
         <div><strong>Диагноз:</strong> {{ patient.diagnosis }}</div>
         <div><strong>Стадия по TNM:</strong> {{ patient.tnm_stage }}</div>
+        <div><strong>Код МКБ:</strong> {{ patient.mkb_code }}</div>
         <div><strong>Последнее обновление:</strong> {{ formatDateTime(patient.last_updated) }}</div>
       </div>
       <div v-if="patient.comment" style="margin-top: 1rem">
