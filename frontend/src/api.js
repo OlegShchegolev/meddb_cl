@@ -121,23 +121,12 @@ export default {
     return api.delete(`/contrast-mammo-rc-findings/${id}`)
   },
 
-  // Ultrasounds
-  getUltrasounds(params = {}) {
-    return api.get('/ultrasounds/', { params })
-  },
-  createUltrasound(data) {
-    return api.post('/ultrasounds/', data)
-  },
-  updateUltrasound(id, data) {
-    return api.put(`/ultrasounds/${id}`, data)
-  },
-  deleteUltrasound(id) {
-    return api.delete(`/ultrasounds/${id}`)
-  },
-
   // MRTs
   getMRTs(params = {}) {
     return api.get('/mrts/', { params })
+  },
+  getMRT(id) {
+    return api.get(`/mrts/${id}`)
   },
   createMRT(data) {
     return api.post('/mrts/', data)
@@ -147,6 +136,34 @@ export default {
   },
   deleteMRT(id) {
     return api.delete(`/mrts/${id}`)
+  },
+
+  // MRT Findings
+  getMRTFindings(mrtId) {
+    return api.get(`/mrt-findings/${mrtId}`)
+  },
+  createMRTFinding(data) {
+    return api.post('/mrt-findings/', data)
+  },
+  updateMRTFinding(id, data) {
+    return api.put(`/mrt-findings/${id}`, data)
+  },
+  deleteMRTFinding(id) {
+    return api.delete(`/mrt-findings/${id}`)
+  },
+
+  // MRT Lymph Nodes
+  getMRTLymphNodes(mrtId) {
+    return api.get(`/mrt-lymph-nodes/${mrtId}`)
+  },
+  createMRTLymphNode(data) {
+    return api.post('/mrt-lymph-nodes/', data)
+  },
+  updateMRTLymphNode(id, data) {
+    return api.put(`/mrt-lymph-nodes/${id}`, data)
+  },
+  deleteMRTLymphNode(id) {
+    return api.delete(`/mrt-lymph-nodes/${id}`)
   },
 
   // Histology Biopsies
@@ -189,5 +206,64 @@ export default {
   },
   deleteHistologyPostop(id) {
     return api.delete(`/histology-postops/${id}`)
+  },
+
+  // ==================== ULTRASOUND API METHODS ====================
+
+  // Ultrasound
+  getUltrasounds(patientId) {
+    return api.get('/ultrasounds/', {
+      params: { patient_id: patientId }
+    })
+  },
+
+  getUltrasound(id) {
+    return api.get(`/ultrasounds/${id}`)
+  },
+
+  createUltrasound(data) {
+    return api.post('/ultrasounds/', data)
+  },
+
+  updateUltrasound(id, data) {
+    return api.put(`/ultrasounds/${id}`, data)
+  },
+
+  deleteUltrasound(id) {
+    return api.delete(`/ultrasounds/${id}`)
+  },
+
+  // Ultrasound Findings
+  getUltrasoundFindings(ultrasoundId) {
+    return api.get(`/ultrasound-findings/${ultrasoundId}`)
+  },
+
+  createUltrasoundFinding(data) {
+    return api.post('/ultrasound-findings/', data)
+  },
+
+  updateUltrasoundFinding(id, data) {
+    return api.put(`/ultrasound-findings/${id}`, data)
+  },
+
+  deleteUltrasoundFinding(id) {
+    return api.delete(`/ultrasound-findings/${id}`)
+  },
+
+  // Ultrasound Lymph Nodes
+  getUltrasoundLymphNodes(ultrasoundId) {
+    return api.get(`/ultrasound-lymph-nodes/${ultrasoundId}`)
+  },
+
+  createUltrasoundLymphNode(data) {
+    return api.post('/ultrasound-lymph-nodes/', data)
+  },
+
+  updateUltrasoundLymphNode(id, data) {
+    return api.put(`/ultrasound-lymph-nodes/${id}`, data)
+  },
+
+  deleteUltrasoundLymphNode(id) {
+    return api.delete(`/ultrasound-lymph-nodes/${id}`)
   }
 }

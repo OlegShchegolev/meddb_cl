@@ -52,19 +52,48 @@
           </div>
           <div class="form-group">
             <label>СНИЛС</label>
-            <input v-model="form.snils" class="input" placeholder="XXX-XXX-XXX XX">
+            <input
+              v-model="form.snils"
+              class="input"
+              placeholder="XXX-XXX-XXX XX"
+              @input="formatSnils"
+              @blur="validateSnils"
+              :class="{ 'error': !snilsValid && snilsTouched }"
+              maxlength="14"
+            >
+            <div v-if="!snilsValid && snilsTouched" class="error-message">
+              Введите 11 цифр
+            </div>
+            <div v-if="snilsValid && snilsTouched" class="success-message">
+              ✓ Корректный формат
+            </div>
           </div>
           <div class="form-group">
             <label>Фамилия *</label>
-            <input v-model="form.last_name" required class="input">
+            <input
+              v-model="form.last_name"
+              @input="form.last_name = form.last_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
+              required
+              class="input"
+            >
           </div>
           <div class="form-group">
             <label>Имя *</label>
-            <input v-model="form.first_name" required class="input">
+            <input
+              v-model="form.first_name"
+              @input="form.first_name = form.first_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
+              required
+              class="input"
+            >
           </div>
           <div class="form-group">
             <label>Отчество</label>
-            <input v-model="form.middle_name" class="input">
+            <input
+              v-model="form.middle_name"
+              @input="form.middle_name = form.middle_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
+              required
+              class="input"
+            >
           </div>
           <div class="form-group">
             <label>Пол *</label>
@@ -76,7 +105,15 @@
           </div>
           <div class="form-group">
             <label>Дата рождения *</label>
-            <input v-model="form.date_of_birth" type="date" required class="input">
+            <input
+              v-model="form.date_of_birth"
+              type="date"
+              required
+              class="input"
+              :min="minDate"
+              :max="maxDate"
+            >
+            <small class="text-muted">От 01.01.1900 до {{ formatDate(maxDate) }}</small>
           </div>
           <div class="form-group">
             <label>Диагноз</label>
@@ -85,6 +122,10 @@
           <div class="form-group">
             <label>Стадия по TNM</label>
             <input v-model="form.tnm_stage" class="input" placeholder="Например: T2N1M0">
+          </div>
+          <div class="form-group">
+            <label>Код МКБ</label>
+            <input v-model="form.mkb_code" class="input" placeholder="">
           </div>
           <div class="form-group">
             <label>Комментарий</label>
@@ -125,13 +166,22 @@ export default {
         diagnosis: '',
         tnm_stage: '',
         comment: ''
-      }
+      },
+      // Переменные для валидации СНИЛС
+      snilsValid: true,
+      snilsTouched: false,
+      maxDate: new Date().toISOString().split('T')[0], // Сегодняшняя дата,
+      minDate: '1900-01-01',
     }
   },
   mounted() {
     this.loadPatients()
   },
   methods: {
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('ru-RU');
+    },
     async loadPatients() {
       try {
         const response = await api.getPatients(this.filters)
@@ -145,14 +195,30 @@ export default {
     },
     editPatient(patient) {
       this.editingPatient = patient.id
-      this.form = { ...patient }
+      this.form = {...patient}
+      // При редактировании устанавливаем состояние валидации для СНИЛС
+      this.validateSnils()
     },
     async savePatient() {
+      // Проверяем валидность СНИЛС перед сохранением
+      const validation = this.validateSnils()
+      if (!validation.isValid) {
+        this.snilsTouched = true
+        alert('Пожалуйста, введите корректный СНИЛС (11 цифр)')
+        return
+      }
+
       try {
+        // Отправляем чистое значение (без форматирования) на сервер
+        const dataToSend = {
+          ...this.form,
+          snils: validation.clean // Отправляем чистое значение
+        }
+
         if (this.editingPatient) {
-          await api.updatePatient(this.editingPatient, this.form)
+          await api.updatePatient(this.editingPatient, dataToSend)
         } else {
-          await api.createPatient(this.form)
+          await api.createPatient(dataToSend)
         }
         this.closeModal()
         this.loadPatients()
@@ -185,10 +251,56 @@ export default {
         tnm_stage: '',
         comment: ''
       }
+      // Сбрасываем состояние валидации
+      this.snilsValid = true
+      this.snilsTouched = false
     },
     formatDateTime(dt) {
       if (!dt) return ''
       return new Date(dt).toLocaleString('ru-RU')
+    },
+    formatSnils(event) {
+      this.snilsTouched = true;
+
+      // Получаем значение без форматирования
+      let value = event.target.value.replace(/\D/g, '');
+
+      // Ограничиваем до 11 цифр
+      value = value.substring(0, 11);
+
+      // Добавляем форматирование
+      let formatted = '';
+      for (let i = 0; i < value.length; i++) {
+        if (i === 3 || i === 6) {
+          formatted += '-';
+        } else if (i === 9) {
+          formatted += ' ';
+        }
+        formatted += value[i];
+      }
+
+      // Обновляем модель
+      this.form.snils = formatted;
+
+      // Валидация
+      this.validateSnils();
+    },
+    validateSnils() {
+      // Убираем форматирование для проверки
+      const cleanValue = this.form.snils.replace(/\D/g, '');
+
+      // Проверяем, что ровно 11 цифр и все цифры
+      this.snilsValid = /^\d{11}$/.test(cleanValue);
+
+      return {
+        formatted: this.form.snils,
+        clean: cleanValue,
+        isValid: this.snilsValid
+      };
+    },
+    // Метод для получения чистого значения (без форматирования)
+    getCleanSnils() {
+      return this.form.snils.replace(/\D/g, '');
     }
   }
 }
@@ -216,7 +328,7 @@ export default {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -302,13 +414,30 @@ export default {
   width: 100%;
 }
 
+.input.error {
+  border-color: #ff3860;
+  box-shadow: 0 0 0 0.125em rgba(255, 56, 96, 0.25);
+}
+
+.error-message {
+  color: #ff3860;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.success-message {
+  color: #23d160;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;

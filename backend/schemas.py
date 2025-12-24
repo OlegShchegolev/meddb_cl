@@ -12,8 +12,8 @@ class PatientBase(BaseModel):
     gender: str
     date_of_birth: date
     diagnosis: Optional[str] = None
-    tnm_stage: Optional[str] = None  # Новое поле
-    mkb_code: Optional[str] = None  # Новое поле
+    tnm_stage: Optional[str] = None
+    mkb_code: Optional[str] = None
     comment: Optional[str] = None
 
 
@@ -26,8 +26,8 @@ class PatientCreate(BaseModel):
     gender: str
     date_of_birth: date
     diagnosis: Optional[str] = None
-    tnm_stage: Optional[str] = None  # Новое поле
-    mkb_code: Optional[str] = None  # Новое поле
+    tnm_stage: Optional[str] = None
+    mkb_code: Optional[str] = None
     comment: Optional[str] = None
 
 
@@ -57,10 +57,10 @@ class MammographyFindingBase(BaseModel):
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
     associated_feature: Optional[str] = None
-    size_x_mm: Optional[int] = None  # Размеры
-    size_y_mm: Optional[int] = None  # Размеры
-    size_z_mm: Optional[int] = None  # Размеры
-    volume_mm3: Optional[int] = None # Размеры
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
     size_max_mm: Optional[int] = None
     size_min_mm: Optional[int] = None
 
@@ -120,10 +120,10 @@ class ContrastMammographyLEFindingBase(BaseModel):
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
     associated_features: Optional[str] = None
-    size_x_mm: Optional[int] = None  # Размеры
-    size_y_mm: Optional[int] = None  # Размеры
-    size_z_mm: Optional[int] = None  # Размеры
-    volume_mm3: Optional[int] = None  # Размеры
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
     size_max_mm: Optional[int] = None
     size_min_mm: Optional[int] = None
     visible_on_rc: Optional[str] = None
@@ -156,10 +156,10 @@ class ContrastMammographyRCFindingBase(BaseModel):
     distribution: Optional[str] = None
     internal_enhancement_pattern: Optional[str] = None
     asymmetric_enhancement_pattern: Optional[str] = None
-    size_x_mm: Optional[int] = None  # Размеры
-    size_y_mm: Optional[int] = None  # Размеры
-    size_z_mm: Optional[int] = None  # Размеры
-    volume_mm3: Optional[int] = None  # Размеры
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
     size_max_mm: Optional[int] = None
     size_min_mm: Optional[int] = None
     enhancement_intensity: Optional[str] = None
@@ -205,10 +205,84 @@ class ContrastMammography(ContrastMammographyBase):
         from_attributes = True
 
 
+# Ultrasound Finding Schemas
+class UltrasoundFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    side: Optional[str] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    finding_type: Optional[str] = None
+    mass_shape: Optional[str] = None
+    spatial_orientation: Optional[str] = None
+    mass_margin: Optional[str] = None
+    mass_boundary: Optional[str] = None
+    echogenicity: Optional[str] = None
+    structure: Optional[str] = None
+    acoustic_effects: Optional[str] = None
+    vascularization_type: Optional[str] = None
+    surrounding_tissue: Optional[str] = None
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
+    associated_feature_type: Optional[str] = None
+
+
+class UltrasoundFindingCreate(UltrasoundFindingBase):
+    ultrasound_id: int
+
+
+class UltrasoundFinding(UltrasoundFindingBase):
+    id: int
+    ultrasound_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Ultrasound Lymph Node Schemas
+class UltrasoundLymphNodeBase(BaseModel):
+    finding_number: Optional[int] = None
+    side: Optional[str] = None
+    has_changes: Optional[str] = None
+    lymph_node_group: Optional[str] = None
+    shape: Optional[str] = None
+    margin: Optional[str] = None
+    boundary: Optional[str] = None
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    medulla_echogenicity: Optional[str] = None
+    cortex_echogenicity: Optional[str] = None
+    has_widened_cortex: Optional[str] = None
+    vascularization_type: Optional[str] = None
+    hyperplasia_type: Optional[str] = None
+
+
+class UltrasoundLymphNodeCreate(UltrasoundLymphNodeBase):
+    ultrasound_id: int
+
+
+class UltrasoundLymphNode(UltrasoundLymphNodeBase):
+    id: int
+    ultrasound_id: int
+
+    class Config:
+        from_attributes = True
+
+
 # Ultrasound Schemas
 class UltrasoundBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
+    study_stage: Optional[int] = None
+    menstrual_cycle_day: Optional[int] = None
+    patient_position: Optional[str] = None
+    birads_right: Optional[str] = None
+    birads_left: Optional[str] = None
+    acr_density_right: Optional[str] = None
+    acr_density_left: Optional[str] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
     comment: Optional[str] = None
 
 
@@ -219,15 +293,91 @@ class UltrasoundCreate(UltrasoundBase):
 class Ultrasound(UltrasoundBase):
     id: int
     patient_id: str
+    findings: List[UltrasoundFinding] = []
+    lymph_nodes: List[UltrasoundLymphNode] = []
 
     class Config:
         from_attributes = True
 
 
-# MRT Schemas
+# MRT Finding Schemas
+class MRTFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    side: Optional[str] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    finding_type: Optional[str] = None
+    mass_shape: Optional[str] = None
+    mass_margin: Optional[str] = None
+    size_x_mm: Optional[int] = None
+    size_y_mm: Optional[int] = None
+    size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
+    t2_signal: Optional[str] = None
+    enhancement_characteristics: Optional[str] = None
+    kinetics: Optional[str] = None
+    dwi_signal: Optional[str] = None
+    adc_signal: Optional[str] = None
+    adc_value: Optional[float] = None
+    invasion_signs: Optional[str] = None
+    nme_distribution: Optional[str] = None
+    nme_enhancement: Optional[str] = None
+
+
+class MRTFindingCreate(MRTFindingBase):
+    mrt_id: int
+
+
+class MRTFinding(MRTFindingBase):
+    id: int
+    mrt_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# MRT Lymph Node Schemas
+class MRTLymphNodeBase(BaseModel):
+    finding_number: Optional[int] = None
+    side: Optional[str] = None
+    has_changes: Optional[str] = None
+    lymph_node_group: Optional[str] = None
+    shape: Optional[str] = None
+    contour: Optional[str] = None
+    size_cortical_mm: Optional[int] = None
+    structure: Optional[str] = None
+    enhancement_intensity: Optional[str] = None
+    kinetics: Optional[str] = None
+    dwi_signal: Optional[str] = None
+    adc_signal: Optional[str] = None
+    adc_value: Optional[float] = None
+
+
+class MRTLymphNodeCreate(MRTLymphNodeBase):
+    mrt_id: int
+
+
+class MRTLymphNode(MRTLymphNodeBase):
+    id: int
+    mrt_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# MRT Schemas (обновленные)
 class MRTBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
+    study_stage: Optional[int] = None
+    menstrual_cycle_day: Optional[int] = None
+    birads_right: Optional[str] = None
+    birads_left: Optional[str] = None
+    acr_density_right: Optional[str] = None
+    acr_density_left: Optional[str] = None
+    bpe_level: Optional[str] = None
+    bpe_symmetry: Optional[str] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
     comment: Optional[str] = None
 
 
@@ -238,6 +388,8 @@ class MRTCreate(MRTBase):
 class MRT(MRTBase):
     id: int
     patient_id: str
+    findings: List[MRTFinding] = []
+    lymph_nodes: List[MRTLymphNode] = []
 
     class Config:
         from_attributes = True

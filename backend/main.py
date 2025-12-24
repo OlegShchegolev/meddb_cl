@@ -332,7 +332,8 @@ def delete_ultrasound(item_id: int, db: Session = Depends(database.get_db)):
     db.commit()
     return {"message": "Record deleted"}
 
-# ==================== MRT ENDPOINTS ====================
+# Замените существующие MRT эндпоинты на следующие:
+
 @app.post("/mrts/", response_model=schemas.MRT)
 def create_mrt(item: schemas.MRTCreate, db: Session = Depends(database.get_db)):
     db_item = database.MRT(**item.dict())
@@ -341,12 +342,22 @@ def create_mrt(item: schemas.MRTCreate, db: Session = Depends(database.get_db)):
     db.refresh(db_item)
     return db_item
 
+
 @app.get("/mrts/", response_model=List[schemas.MRT])
 def get_mrts(patient_id: Optional[str] = None, db: Session = Depends(database.get_db)):
     query = db.query(database.MRT)
     if patient_id:
         query = query.filter(database.MRT.patient_id == patient_id)
     return query.all()
+
+
+@app.get("/mrts/{item_id}", response_model=schemas.MRT)
+def get_mrt(item_id: int, db: Session = Depends(database.get_db)):
+    item = db.query(database.MRT).filter(database.MRT.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    return item
+
 
 @app.put("/mrts/{item_id}", response_model=schemas.MRT)
 def update_mrt(item_id: int, item: schemas.MRTCreate, db: Session = Depends(database.get_db)):
@@ -359,6 +370,7 @@ def update_mrt(item_id: int, item: schemas.MRTCreate, db: Session = Depends(data
     db.refresh(db_item)
     return db_item
 
+
 @app.delete("/mrts/{item_id}")
 def delete_mrt(item_id: int, db: Session = Depends(database.get_db)):
     item = db.query(database.MRT).filter(database.MRT.id == item_id).first()
@@ -367,6 +379,145 @@ def delete_mrt(item_id: int, db: Session = Depends(database.get_db)):
     db.delete(item)
     db.commit()
     return {"message": "Record deleted"}
+
+
+# ==================== MRT FINDING ENDPOINTS ====================
+@app.post("/mrt-findings/", response_model=schemas.MRTFinding)
+def create_mrt_finding(finding: schemas.MRTFindingCreate, db: Session = Depends(database.get_db)):
+    next_number = get_next_finding_number(
+        db, database.MRTFinding, "mrt_id", finding.mrt_id
+    )
+
+    finding_data = finding.dict()
+    finding_data['finding_number'] = next_number
+
+    db_finding = database.MRTFinding(**finding_data)
+    db.add(db_finding)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.get("/mrt-findings/{mrt_id}", response_model=List[schemas.MRTFinding])
+def get_mrt_findings(mrt_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.MRTFinding).filter(
+        database.MRTFinding.mrt_id == mrt_id
+    ).all()
+
+
+@app.put("/mrt-findings/{finding_id}", response_model=schemas.MRTFinding)
+def update_mrt_finding(finding_id: int, finding: schemas.MRTFindingCreate,
+                       db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.MRTFinding).filter(
+        database.MRTFinding.id == finding_id
+    ).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    old_mrt_id = db_finding.mrt_id
+    new_mrt_id = finding.mrt_id
+
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+
+    if old_mrt_id != new_mrt_id:
+        next_number = get_next_finding_number(
+            db, database.MRTFinding, "mrt_id", new_mrt_id
+        )
+        db_finding.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.delete("/mrt-findings/{finding_id}")
+def delete_mrt_finding(finding_id: int, db: Session = Depends(database.get_db)):
+    finding = db.query(database.MRTFinding).filter(
+        database.MRTFinding.id == finding_id
+    ).first()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    mrt_id = finding.mrt_id
+    db.delete(finding)
+    db.commit()
+
+    renumber_findings(
+        db, database.MRTFinding, "mrt_id", mrt_id
+    )
+
+    return {"message": "Finding deleted and numbers reordered"}
+
+
+# ==================== MRT LYMPH NODE ENDPOINTS ====================
+@app.post("/mrt-lymph-nodes/", response_model=schemas.MRTLymphNode)
+def create_mrt_lymph_node(lymph_node: schemas.MRTLymphNodeCreate,
+                          db: Session = Depends(database.get_db)):
+    next_number = get_next_finding_number(
+        db, database.MRTLymphNode, "mrt_id", lymph_node.mrt_id
+    )
+
+    lymph_node_data = lymph_node.dict()
+    lymph_node_data['finding_number'] = next_number
+
+    db_lymph_node = database.MRTLymphNode(**lymph_node_data)
+    db.add(db_lymph_node)
+    db.commit()
+    db.refresh(db_lymph_node)
+    return db_lymph_node
+
+
+@app.get("/mrt-lymph-nodes/{mrt_id}", response_model=List[schemas.MRTLymphNode])
+def get_mrt_lymph_nodes(mrt_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.MRTLymphNode).filter(
+        database.MRTLymphNode.mrt_id == mrt_id
+    ).all()
+
+
+@app.put("/mrt-lymph-nodes/{lymph_node_id}", response_model=schemas.MRTLymphNode)
+def update_mrt_lymph_node(lymph_node_id: int, lymph_node: schemas.MRTLymphNodeCreate,
+                          db: Session = Depends(database.get_db)):
+    db_lymph_node = db.query(database.MRTLymphNode).filter(
+        database.MRTLymphNode.id == lymph_node_id
+    ).first()
+    if not db_lymph_node:
+        raise HTTPException(status_code=404, detail="Lymph node not found")
+
+    old_mrt_id = db_lymph_node.mrt_id
+    new_mrt_id = lymph_node.mrt_id
+
+    for key, value in lymph_node.dict().items():
+        setattr(db_lymph_node, key, value)
+
+    if old_mrt_id != new_mrt_id:
+        next_number = get_next_finding_number(
+            db, database.MRTLymphNode, "mrt_id", new_mrt_id
+        )
+        db_lymph_node.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_lymph_node)
+    return db_lymph_node
+
+
+@app.delete("/mrt-lymph-nodes/{lymph_node_id}")
+def delete_mrt_lymph_node(lymph_node_id: int, db: Session = Depends(database.get_db)):
+    lymph_node = db.query(database.MRTLymphNode).filter(
+        database.MRTLymphNode.id == lymph_node_id
+    ).first()
+    if not lymph_node:
+        raise HTTPException(status_code=404, detail="Lymph node not found")
+
+    mrt_id = lymph_node.mrt_id
+    db.delete(lymph_node)
+    db.commit()
+
+    renumber_findings(
+        db, database.MRTLymphNode, "mrt_id", mrt_id
+    )
+
+    return {"message": "Lymph node deleted and numbers reordered"}
 
 # ==================== HISTOLOGY BIOPSY ENDPOINTS ====================
 @app.post("/histology-biopsies/", response_model=schemas.HistologyBiopsy)
@@ -705,3 +856,192 @@ def delete_rc_finding(finding_id: int, db: Session = Depends(database.get_db)):
     )
 
     return {"message": "Finding deleted and numbers reordered"}
+
+
+# Добавьте эти эндпоинты в существующий main.py после эндпоинтов контрастной маммографии
+
+# ==================== ULTRASOUND ENDPOINTS (UPDATED) ====================
+@app.post("/ultrasounds/", response_model=schemas.Ultrasound)
+def create_ultrasound(item: schemas.UltrasoundCreate, db: Session = Depends(database.get_db)):
+    db_item = database.Ultrasound(**item.dict())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+
+@app.get("/ultrasounds/", response_model=List[schemas.Ultrasound])
+def get_ultrasounds(patient_id: Optional[str] = None, db: Session = Depends(database.get_db)):
+    query = db.query(database.Ultrasound)
+    if patient_id:
+        query = query.filter(database.Ultrasound.patient_id == patient_id)
+    return query.all()
+
+
+@app.get("/ultrasounds/{item_id}", response_model=schemas.Ultrasound)
+def get_ultrasound(item_id: int, db: Session = Depends(database.get_db)):
+    item = db.query(database.Ultrasound).filter(database.Ultrasound.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    return item
+
+
+@app.put("/ultrasounds/{item_id}", response_model=schemas.Ultrasound)
+def update_ultrasound(item_id: int, item: schemas.UltrasoundCreate, db: Session = Depends(database.get_db)):
+    db_item = db.query(database.Ultrasound).filter(database.Ultrasound.id == item_id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+
+@app.delete("/ultrasounds/{item_id}")
+def delete_ultrasound(item_id: int, db: Session = Depends(database.get_db)):
+    item = db.query(database.Ultrasound).filter(database.Ultrasound.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Record not found")
+    db.delete(item)
+    db.commit()
+    return {"message": "Record deleted"}
+
+
+# ==================== ULTRASOUND FINDING ENDPOINTS ====================
+@app.post("/ultrasound-findings/", response_model=schemas.UltrasoundFinding)
+def create_ultrasound_finding(finding: schemas.UltrasoundFindingCreate, db: Session = Depends(database.get_db)):
+    next_number = get_next_finding_number(
+        db, database.UltrasoundFinding, "ultrasound_id", finding.ultrasound_id
+    )
+
+    finding_data = finding.dict()
+    finding_data['finding_number'] = next_number
+
+    db_finding = database.UltrasoundFinding(**finding_data)
+    db.add(db_finding)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.get("/ultrasound-findings/{ultrasound_id}", response_model=List[schemas.UltrasoundFinding])
+def get_ultrasound_findings(ultrasound_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.UltrasoundFinding).filter(
+        database.UltrasoundFinding.ultrasound_id == ultrasound_id
+    ).all()
+
+
+@app.put("/ultrasound-findings/{finding_id}", response_model=schemas.UltrasoundFinding)
+def update_ultrasound_finding(finding_id: int, finding: schemas.UltrasoundFindingCreate,
+                              db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.UltrasoundFinding).filter(
+        database.UltrasoundFinding.id == finding_id
+    ).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    old_ultrasound_id = db_finding.ultrasound_id
+    new_ultrasound_id = finding.ultrasound_id
+
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+
+    if old_ultrasound_id != new_ultrasound_id:
+        next_number = get_next_finding_number(
+            db, database.UltrasoundFinding, "ultrasound_id", new_ultrasound_id
+        )
+        db_finding.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.delete("/ultrasound-findings/{finding_id}")
+def delete_ultrasound_finding(finding_id: int, db: Session = Depends(database.get_db)):
+    finding = db.query(database.UltrasoundFinding).filter(
+        database.UltrasoundFinding.id == finding_id
+    ).first()
+    if not finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    ultrasound_id = finding.ultrasound_id
+    db.delete(finding)
+    db.commit()
+
+    renumber_findings(
+        db, database.UltrasoundFinding, "ultrasound_id", ultrasound_id
+    )
+
+    return {"message": "Finding deleted and numbers reordered"}
+
+
+# ==================== ULTRASOUND LYMPH NODE ENDPOINTS ====================
+@app.post("/ultrasound-lymph-nodes/", response_model=schemas.UltrasoundLymphNode)
+def create_ultrasound_lymph_node(lymph_node: schemas.UltrasoundLymphNodeCreate,
+                                 db: Session = Depends(database.get_db)):
+    next_number = get_next_finding_number(
+        db, database.UltrasoundLymphNode, "ultrasound_id", lymph_node.ultrasound_id
+    )
+
+    lymph_node_data = lymph_node.dict()
+    lymph_node_data['finding_number'] = next_number
+
+    db_lymph_node = database.UltrasoundLymphNode(**lymph_node_data)
+    db.add(db_lymph_node)
+    db.commit()
+    db.refresh(db_lymph_node)
+    return db_lymph_node
+
+
+@app.get("/ultrasound-lymph-nodes/{ultrasound_id}", response_model=List[schemas.UltrasoundLymphNode])
+def get_ultrasound_lymph_nodes(ultrasound_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.UltrasoundLymphNode).filter(
+        database.UltrasoundLymphNode.ultrasound_id == ultrasound_id
+    ).all()
+
+
+@app.put("/ultrasound-lymph-nodes/{lymph_node_id}", response_model=schemas.UltrasoundLymphNode)
+def update_ultrasound_lymph_node(lymph_node_id: int, lymph_node: schemas.UltrasoundLymphNodeCreate,
+                                 db: Session = Depends(database.get_db)):
+    db_lymph_node = db.query(database.UltrasoundLymphNode).filter(
+        database.UltrasoundLymphNode.id == lymph_node_id
+    ).first()
+    if not db_lymph_node:
+        raise HTTPException(status_code=404, detail="Lymph node not found")
+
+    old_ultrasound_id = db_lymph_node.ultrasound_id
+    new_ultrasound_id = lymph_node.ultrasound_id
+
+    for key, value in lymph_node.dict().items():
+        setattr(db_lymph_node, key, value)
+
+    if old_ultrasound_id != new_ultrasound_id:
+        next_number = get_next_finding_number(
+            db, database.UltrasoundLymphNode, "ultrasound_id", new_ultrasound_id
+        )
+        db_lymph_node.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_lymph_node)
+    return db_lymph_node
+
+
+@app.delete("/ultrasound-lymph-nodes/{lymph_node_id}")
+def delete_ultrasound_lymph_node(lymph_node_id: int, db: Session = Depends(database.get_db)):
+    lymph_node = db.query(database.UltrasoundLymphNode).filter(
+        database.UltrasoundLymphNode.id == lymph_node_id
+    ).first()
+    if not lymph_node:
+        raise HTTPException(status_code=404, detail="Lymph node not found")
+
+    ultrasound_id = lymph_node.ultrasound_id
+    db.delete(lymph_node)
+    db.commit()
+
+    renumber_findings(
+        db, database.UltrasoundLymphNode, "ultrasound_id", ultrasound_id
+    )
+
+    return {"message": "Lymph node deleted and numbers reordered"}

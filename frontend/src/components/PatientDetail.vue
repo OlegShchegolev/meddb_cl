@@ -44,17 +44,24 @@
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Заключение</th>
-              <th>Комментарий</th>
+              <th>Этап</th>
+              <th>BI-RADS справа</th>
+              <th>BI-RADS слева</th>
+              <th>Находки</th>
+              <th>Лимфоузлы</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in patient.ultrasounds" :key="item.id">
               <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.comment }}</td>
+              <td>{{ item.study_stage }}</td>
+              <td>{{ item.birads_right }}</td>
+              <td>{{ item.birads_left }}</td>
+              <td>{{ item.findings?.length || 0 }}</td>
+              <td>{{ item.lymph_nodes?.length || 0 }}</td>
               <td>
+                <button @click="viewUltrasoundDetails(item)" class="btn-sm btn-info">Подробно</button>
                 <button @click="editUltrasound(item)" class="btn-sm btn-warning">Редактировать</button>
                 <button @click="deleteUltrasound(item.id)" class="btn-sm btn-danger">Удалить</button>
               </td>
@@ -257,21 +264,109 @@
 
     <!-- Modal УЗИ -->
     <div v-if="showUltrasoundModal || editingUltrasound" class="modal" @click.self="closeUltrasoundModal">
-      <div class="modal-content">
+      <div class="modal-content modal-large">
         <h3>{{ editingUltrasound ? 'Редактировать УЗИ' : 'Добавить УЗИ' }}</h3>
         <form @submit.prevent="saveUltrasound">
-          <div class="form-group">
-            <label>Дата исследования *</label>
-            <input v-model="ultrasoundForm.exam_date" type="date" required class="input">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Дата исследования *</label>
+              <input v-model="ultrasoundForm.exam_date" type="date" required class="input">
+            </div>
+            <div class="form-group">
+              <label>Этап исследования (1-9)</label>
+              <select v-model.number="ultrasoundForm.study_stage" class="input">
+                <option :value="null">Выберите</option>
+                <option :value="1">1</option>
+                <option :value="2">2</option>
+                <option :value="3">3</option>
+                <option :value="4">4</option>
+                <option :value="5">5</option>
+                <option :value="6">6</option>
+                <option :value="7">7</option>
+                <option :value="8">8</option>
+                <option :value="9">9</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Заключение</label>
-            <textarea v-model="ultrasoundForm.findings" class="input" rows="4"></textarea>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>День менструального цикла</label>
+              <input v-model.number="ultrasoundForm.menstrual_cycle_day" type="number" min="1" class="input">
+            </div>
+            <div class="form-group">
+              <label>Положение пациента</label>
+              <select v-model="ultrasoundForm.patient_position" class="input">
+                <option value="">Выберите</option>
+                <option value="Лежа на спине">Лежа на спине</option>
+                <option value="Лежа на боку">Лежа на боку</option>
+                <option value="Сидя">Сидя</option>
+                <option value="Полипозиционно">Полипозиционно</option>
+              </select>
+            </div>
           </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>BI-RADS справа</label>
+              <select v-model="ultrasoundForm.birads_right" class="input">
+                <option value="">Выберите</option>
+                <option value="BI-RADS-0">BI-RADS-0</option>
+                <option value="BI-RADS-1">BI-RADS-1</option>
+                <option value="BI-RADS-2">BI-RADS-2</option>
+                <option value="BI-RADS-3">BI-RADS-3</option>
+                <option value="BI-RADS-4a">BI-RADS-4a</option>
+                <option value="BI-RADS-4b">BI-RADS-4b</option>
+                <option value="BI-RADS-4c">BI-RADS-4c</option>
+                <option value="BI-RADS-5">BI-RADS-5</option>
+                <option value="BI-RADS-6">BI-RADS-6</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>BI-RADS слева</label>
+              <select v-model="ultrasoundForm.birads_left" class="input">
+                <option value="">Выберите</option>
+                <option value="BI-RADS-0">BI-RADS-0</option>
+                <option value="BI-RADS-1">BI-RADS-1</option>
+                <option value="BI-RADS-2">BI-RADS-2</option>
+                <option value="BI-RADS-3">BI-RADS-3</option>
+                <option value="BI-RADS-4a">BI-RADS-4a</option>
+                <option value="BI-RADS-4b">BI-RADS-4b</option>
+                <option value="BI-RADS-4c">BI-RADS-4c</option>
+                <option value="BI-RADS-5">BI-RADS-5</option>
+                <option value="BI-RADS-6">BI-RADS-6</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Плотность ACR справа</label>
+              <select v-model="ultrasoundForm.acr_density_right" class="input">
+                <option value="">Выберите</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Плотность ACR слева</label>
+              <select v-model="ultrasoundForm.acr_density_left" class="input">
+                <option value="">Выберите</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>Комментарий</label>
-            <textarea v-model="ultrasoundForm.comment" class="input" rows="2"></textarea>
+            <textarea v-model="ultrasoundForm.comment" class="input" rows="3"></textarea>
           </div>
+
           <div class="form-actions">
             <button type="button" @click="closeUltrasoundModal" class="btn btn-secondary">Отмена</button>
             <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -291,7 +386,18 @@
           </div>
           <div class="form-group">
             <label>Этап исследования (1-9)</label>
-            <input v-model.number="mammoForm.study_stage" type="number" min="1" max="9" class="input">
+              <select v-model="contrastForm.study_stage" class="input">
+                <option value="1">Выберите</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+              </select>
           </div>
           <div class="form-group">
             <label>Сторона поражения</label>
@@ -349,7 +455,18 @@
             </div>
             <div class="form-group">
               <label>Этап исследования (1-9)</label>
-              <input v-model.number="contrastForm.study_stage" type="number" min="1" max="9" class="input">
+              <select v-model="contrastForm.study_stage" class="input">
+                <option value="1">Выберите</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+              </select>
             </div>
           </div>
 
@@ -423,12 +540,134 @@
       </div>
     </div>
 
-    <SimpleModal
-      v-if="showMRTModal"
-      title="Добавить МРТ"
-      :form="mrtForm"
-      @close="showMRTModal = false"
-      @save="saveMRT"
+    <!-- Модал МРТ -->
+    <div v-if="showMRTModal || editingMRT" class="modal" @click.self="closeMRTModal">
+      <div class="modal-content modal-large">
+        <h3>{{ editingMRT ? 'Редактировать МРТ' : 'Добавить МРТ' }}</h3>
+        <form @submit.prevent="saveMRT">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Дата исследования *</label>
+              <input v-model="mrtForm.exam_date" type="date" required class="input">
+            </div>
+            <div class="form-group">
+              <label>Этап исследования (1-9)</label>
+              <select v-model.number="mrtForm.study_stage" class="input">
+                <option :value="null">Выберите</option>
+                <option :value="1">1</option>
+                <option :value="2">2</option>
+                <option :value="3">3</option>
+                <option :value="4">4</option>
+                <option :value="5">5</option>
+                <option :value="6">6</option>
+                <option :value="7">7</option>
+                <option :value="8">8</option>
+                <option :value="9">9</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>День менструального цикла</label>
+              <input v-model.number="mrtForm.menstrual_cycle_day" type="number" min="1" class="input">
+            </div>
+            <div class="form-group">
+              <label>BI-RADS справа</label>
+              <select v-model="mrtForm.birads_right" class="input">
+                <option value="">Выберите</option>
+                <option value="BI-RADS-0">BI-RADS-0</option>
+                <option value="BI-RADS-1">BI-RADS-1</option>
+                <option value="BI-RADS-2">BI-RADS-2</option>
+                <option value="BI-RADS-3">BI-RADS-3</option>
+                <option value="BI-RADS-4a">BI-RADS-4a</option>
+                <option value="BI-RADS-4b">BI-RADS-4b</option>
+                <option value="BI-RADS-4c">BI-RADS-4c</option>
+                <option value="BI-RADS-5">BI-RADS-5</option>
+                <option value="BI-RADS-6">BI-RADS-6</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>BI-RADS слева</label>
+              <select v-model="mrtForm.birads_left" class="input">
+                <option value="">Выберите</option>
+                <option value="BI-RADS-0">BI-RADS-0</option>
+                <option value="BI-RADS-1">BI-RADS-1</option>
+                <option value="BI-RADS-2">BI-RADS-2</option>
+                <option value="BI-RADS-3">BI-RADS-3</option>
+                <option value="BI-RADS-4a">BI-RADS-4a</option>
+                <option value="BI-RADS-4b">BI-RADS-4b</option>
+                <option value="BI-RADS-4c">BI-RADS-4c</option>
+                <option value="BI-RADS-5">BI-RADS-5</option>
+                <option value="BI-RADS-6">BI-RADS-6</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Плотность ACR справа</label>
+              <select v-model="mrtForm.acr_density_right" class="input">
+                <option value="">Выберите</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Плотность ACR слева</label>
+              <select v-model="mrtForm.acr_density_left" class="input">
+                <option value="">Выберите</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Степень фонового контрастирования (BPE)</label>
+              <select v-model="mrtForm.bpe_level" class="input">
+                <option value="">Выберите</option>
+                <option value="минимальная">минимальная</option>
+                <option value="слабая">слабая</option>
+                <option value="умеренная">умеренная</option>
+                <option value="выраженная">выраженная</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Симметрия фонового контрастирования</label>
+            <select v-model="mrtForm.bpe_symmetry" class="input">
+              <option value="">Выберите</option>
+              <option value="Симметричная">Симметричная</option>
+              <option value="Асимметричная">Асимметричная</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Комментарий</label>
+            <textarea v-model="mrtForm.comment" class="input" rows="3"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" @click="closeMRTModal" class="btn btn-secondary">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Модал деталей МРТ -->
+    <MRTModal
+      v-if="selectedMRT"
+      :mrt="selectedMRT"
+      @close="selectedMRT = null"
+      @updated="loadPatient"
     />
 
     <HistologyModal
@@ -470,17 +709,28 @@
       @updated="loadPatient"
     />
   </div>
+  <!-- Модал УЗИ с находками -->
+  <UltrasoundModal
+    v-if="selectedUltrasound"
+    :ultrasound="selectedUltrasound"
+    @close="selectedUltrasound = null"
+    @updated="loadPatient"
+  />
 </template>
 
 <script>
 import api from '../api'
 import MammographyFindingsModal from './MammographyFindingsModal.vue'
 import ContrastMammographyModal from './ContrastMammographyModal.vue'
+import UltrasoundModal from './UltrasoundModal.vue'
+import MRTModal from './MRTModal.vue' // Добавьте этот импорт
 
 export default {
   components: {
     MammographyFindingsModal,
-    ContrastMammographyModal
+    ContrastMammographyModal,
+    UltrasoundModal,
+    MRTModal
   },
   data() {
     return {
@@ -504,6 +754,7 @@ export default {
       showHistPostopModal: false,
       selectedMammography: null,
       selectedContrastMammo: null,
+      selectedUltrasound: null,
       editingMammo: null,
       editingContrast: null,
       editingUltrasound: null,
@@ -511,7 +762,19 @@ export default {
       editingHistBiopsy: null,
       editingCyto: null,
       editingHistPostop: null,
-      ultrasoundForm: { exam_date: '', findings: '', comment: '' },
+      ultrasoundForm: {
+        exam_date: '',
+        study_stage: null,
+        menstrual_cycle_day: null,
+        patient_position: '',
+        birads_right: '',
+        birads_left: '',
+        acr_density_right: '',
+        acr_density_left: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
+      },
       mammoForm: {
         exam_date: '',
         study_stage: null,
@@ -532,7 +795,22 @@ export default {
         dynamics: '',
         comment: ''
       },
-      mrtForm: { exam_date: '', findings: '', comment: '' },
+      selectedMRT: null,
+      editingMRT: null,
+      mrtForm: {
+        exam_date: '',
+        study_stage: null,
+        menstrual_cycle_day: null,
+        birads_right: '',
+        birads_left: '',
+        acr_density_right: '',
+        acr_density_left: '',
+        bpe_level: '',
+        bpe_symmetry: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
+      },
       histBiopsyForm: { exam_date: '', findings: '', ihc_results: '', comment: '' },
       cytoForm: { exam_date: '', findings: '', comment: '' },
       histPostopForm: { exam_date: '', findings: '', ihc_results: '', comment: '' }
@@ -565,7 +843,10 @@ export default {
         this.closeUltrasoundModal()
         this.loadPatient()
       } catch (error) {
-        alert('Ошибка сохранения')
+        console.error('Ошибка сохранения УЗИ:', error)
+        console.error('Данные формы:', this.ultrasoundForm)
+        // alert('Ошибка сохранения')
+        alert('Ошибка сохранения: ' + (error.response?.data?.detail || error.message))
       }
     },
     editUltrasound(item) {
@@ -576,7 +857,22 @@ export default {
     closeUltrasoundModal() {
       this.showUltrasoundModal = false
       this.editingUltrasound = null
-      this.ultrasoundForm = { exam_date: '', findings: '', comment: '' }
+      this.ultrasoundForm = {
+        exam_date: '',
+        study_stage: null,
+        menstrual_cycle_day: null,
+        patient_position: '',
+        birads_right: '',
+        birads_left: '',
+        acr_density_right: '',
+        acr_density_left: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
+      }
+    },
+    viewUltrasoundDetails(item) {
+      this.selectedUltrasound = item
     },
     async deleteUltrasound(id) {
       if (confirm('Удалить запись?')) {
@@ -666,11 +962,49 @@ export default {
         this.loadPatient()
       }
     },
-    async saveMRT() {
-      await api.createMRT({ ...this.mrtForm, patient_id: this.patient.id })
-      this.showMRTModal = false
-      this.loadPatient()
+    viewMRTDetails(item) {
+      this.selectedMRT = item
     },
+
+    editMRT(item) {
+      this.editingMRT = item.id
+      this.mrtForm = { ...item }
+      this.showMRTModal = true
+    },
+
+    async saveMRT() {
+      try {
+        if (this.editingMRT) {
+          await api.updateMRT(this.editingMRT, { ...this.mrtForm, patient_id: this.patient.id })
+        } else {
+          await api.createMRT({ ...this.mrtForm, patient_id: this.patient.id })
+        }
+        this.closeMRTModal()
+        this.loadPatient()
+      } catch (error) {
+        alert('Ошибка сохранения')
+      }
+    },
+
+    closeMRTModal() {
+      this.showMRTModal = false
+      this.editingMRT = null
+      this.mrtForm = {
+        exam_date: '',
+        study_stage: null,
+        menstrual_cycle_day: null,
+        birads_right: '',
+        birads_left: '',
+        acr_density_right: '',
+        acr_density_left: '',
+        bpe_level: '',
+        bpe_symmetry: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
+      }
+    },
+
     async deleteMRT(id) {
       if (confirm('Удалить запись?')) {
         await api.deleteMRT(id)
@@ -741,4 +1075,21 @@ export default {
 .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
 .input { padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px; width: 100%; }
 .form-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
+.btn-info {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.btn-warning {
+  background: #ffc107;
+  color: #212529;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
 </style>

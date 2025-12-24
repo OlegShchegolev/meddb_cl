@@ -19,7 +19,8 @@
               <th>Локализация</th>
               <th>Глубина</th>
               <th>Тип</th>
-              <th>Размеры</th>
+              <th>Размеры (мм)</th>
+              <th>Объём (мм³)</th>
               <th>Действия</th>
             </tr>
           </thead>
@@ -29,7 +30,15 @@
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.depth_location }}</td>
               <td>{{ finding.finding_type }}</td>
-              <td>{{ finding.size_mm }}</td>
+              <td>
+                <template v-if="finding.size_x_mm && finding.size_y_mm && finding.size_z_mm">
+                  {{ finding.size_x_mm }}×{{ finding.size_y_mm }}×{{ finding.size_z_mm }}
+                </template>
+                <template v-else>
+                  {{ finding.size_mm }}
+                </template>
+              </td>
+              <td>{{ finding.volume_mm3 ? finding.volume_mm3 + ' мм³' : '-' }}</td>
               <td>
                 <button @click="editFinding(finding)" class="btn-sm btn-warning">Изменить</button>
                 <button @click="deleteFinding(finding.id)" class="btn-sm btn-danger">Удалить</button>
@@ -41,15 +50,16 @@
       </div>
 
       <!-- Модальное окно добавления/редактирования находки -->
-      <div v-if="showAddFinding" class="modal inner-modal" @click.self="closeAddModal">
-        <div class="modal-content modal-large inner-modal-content">
+      <div v-if="showAddFinding" class="inner-modal-wrapper">
+        <div class="inner-modal-backdrop" @click.self="closeAddModal"></div>
+        <div ref="modalContent" class="inner-modal-content modal-large">
           <h4>{{ editingFinding ? 'Редактировать находку' : 'Добавить находку' }}</h4>
           <form @submit.prevent="saveFinding">
             <div class="form-row">
-              <div class="form-group">
-                <label>Номер находки (1-9) *</label>
-                <input v-model.number="findingForm.finding_number" type="number" min="1" max="9" required class="input">
-              </div>
+<!--              <div class="form-group">-->
+<!--                <label>Номер находки (1-9) *</label>-->
+<!--                <input v-model.number="findingForm.finding_number" type="number" min="1" max="9" required class="input">-->
+<!--              </div>-->
               <div class="form-group">
                 <label>Локализация по квадрантам *</label>
                 <select v-model="findingForm.quadrant_location" required class="input">
@@ -82,7 +92,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Форма</label>
-                  <select v-model="findingForm.mass_shape" class="input">
+                  <select v-model="findingForm.mass_shape" @change="onMassShapeChange" class="input">
                     <option value="">Выберите</option>
                     <option v-for="shape in massShapes" :key="shape" :value="shape">{{ shape }}</option>
                   </select>
@@ -103,10 +113,66 @@
                     <option v-for="density in massDensities" :key="density" :value="density">{{ density }}</option>
                   </select>
                 </div>
+              </div>
+
+              <!-- Размеры для объемного образования -->
+              <div v-if="findingForm.mass_shape === 'Округлая'" class="form-group">
+                <label>Размер (мм) *</label>
+                <input
+                  v-model.number="findingForm.size_x_mm"
+                  @input="copySizeForRoundMass"
+                  type="number"
+                  min="1"
+                  required
+                  class="input"
+                  placeholder="Введите размер"
+                >
+                <small class="text-muted">Для округлого образования все размеры будут одинаковыми</small>
+              </div>
+              <div v-else class="form-row">
                 <div class="form-group">
-                  <label>Размеры (мм) *</label>
-                  <input v-model="findingForm.size_mm" placeholder="15x16x17" required class="input">
+                  <label>Размер X (мм) *</label>
+                  <input
+                    v-model.number="findingForm.size_x_mm"
+                    @input="calculateMetrics"
+                    type="number"
+                    min="1"
+                    required
+                    class="input"
+                    placeholder="X размер"
+                  >
                 </div>
+                <div class="form-group">
+                  <label>Размер Y (мм) *</label>
+                  <input
+                    v-model.number="findingForm.size_y_mm"
+                    @input="calculateMetrics"
+                    type="number"
+                    min="1"
+                    required
+                    class="input"
+                    placeholder="Y размер"
+                  >
+                </div>
+                <div class="form-group">
+                  <label>Размер Z (мм) *</label>
+                  <input
+                    v-model.number="findingForm.size_z_mm"
+                    @input="calculateMetrics"
+                    type="number"
+                    min="1"
+                    required
+                    class="input"
+                    placeholder="Z размер"
+                  >
+                </div>
+              </div>
+
+              <!-- Рассчитанные параметры -->
+              <div v-if="findingForm.size_x_mm && findingForm.size_y_mm && findingForm.size_z_mm" class="calculated-metrics">
+                <div><strong>Объём:</strong> {{ findingForm.volume_mm3 }} мм³</div>
+                <div><strong>Макс. размер:</strong> {{ findingForm.size_max_mm }} мм</div>
+                <div><strong>Мин. размер:</strong> {{ findingForm.size_min_mm }} мм</div>
               </div>
             </div>
 
@@ -121,10 +187,15 @@
                     <option v-for="type in asymmetryTypes" :key="type" :value="type">{{ type }}</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Размеры (мм) *</label>
-                  <input v-model="findingForm.size_mm" placeholder="15x16x17" required class="input">
-                </div>
+<!--                <div class="form-group">-->
+<!--                  <label>Размеры (мм) *</label>-->
+<!--                  <input-->
+<!--                    v-model="findingForm.size_mm"-->
+<!--                    placeholder="15x16x17"-->
+<!--                    required-->
+<!--                    class="input"-->
+<!--                  >-->
+<!--                </div>-->
               </div>
             </div>
 
@@ -142,7 +213,7 @@
                 <label>Морфология</label>
                 <select v-model="findingForm.calcification_morphology" class="input">
                   <option value="">Выберите</option>
-                  <option v-for="morph in calcificationMorphology" :key="morph" :value="morph">{{ morph }}</option>
+                    <option v-for="morph in calcificationMorphology" :key="morph" :value="morph">{{ morph }}</option>
                 </select>
               </div>
               <div class="form-row">
@@ -153,10 +224,15 @@
                     <option v-for="dist in calcificationDistribution" :key="dist" :value="dist">{{ dist }}</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>Размеры зоны (мм) *</label>
-                  <input v-model="findingForm.size_mm" placeholder="15x16x17" required class="input">
-                </div>
+<!--                <div class="form-group">-->
+<!--                  <label>Размеры зоны (мм) *</label>-->
+<!--                  <input-->
+<!--                    v-model="findingForm.size_mm"-->
+<!--                    placeholder="15x16x17"-->
+<!--                    required-->
+<!--                    class="input"-->
+<!--                  >-->
+<!--                </div>-->
               </div>
             </div>
 
@@ -214,6 +290,12 @@ export default {
         mass_shape: '',
         mass_margin: '',
         mass_density: '',
+        size_x_mm: null,
+        size_y_mm: null,
+        size_z_mm: null,
+        volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null,
         asymmetry_type: '',
         calcification_malignancy: '',
         calcification_morphology: '',
@@ -248,19 +330,128 @@ export default {
     },
     onTypeChange() {
       // Очистить поля при смене типа
-      this.findingForm.mass_shape = ''
-      this.findingForm.mass_margin = ''
-      this.findingForm.mass_density = ''
-      this.findingForm.asymmetry_type = ''
-      this.findingForm.calcification_malignancy = ''
-      this.findingForm.calcification_morphology = ''
-      this.findingForm.calcification_distribution = ''
-      this.findingForm.size_mm = ''
+      this.findingForm = {
+        ...this.findingForm,
+        mass_shape: '',
+        mass_margin: '',
+        mass_density: '',
+        size_x_mm: null,
+        size_y_mm: null,
+        size_z_mm: null,
+        volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null,
+        asymmetry_type: '',
+        calcification_malignancy: '',
+        calcification_morphology: '',
+        calcification_distribution: '',
+        size_mm: ''
+      }
       this.selectedFeatures = []
+
+      // Прокрутить к началу формы при смене типа
+      this.$nextTick(() => {
+        this.scrollToFormBottom();
+      });
+    },
+
+    onMassShapeChange() {
+      // При изменении формы сбросить размеры для пересчета
+      this.findingForm.size_x_mm = null
+      this.findingForm.size_y_mm = null
+      this.findingForm.size_z_mm = null
+      this.findingForm.volume_mm3 = null
+      this.findingForm.size_max_mm = null
+      this.findingForm.size_min_mm = null
+    },
+
+    calculateMetrics() {
+      // Рассчитываем объём, максимальный и минимальный размеры
+      const x = this.findingForm.size_x_mm;
+      const y = this.findingForm.size_y_mm;
+      const z = this.findingForm.size_z_mm;
+
+      if (x && y && z) {
+        // Объём для эллипсоида: V = (4/3) * π * a * b * c
+        // где a, b, c - полуоси (размеры / 2)
+        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
+        this.findingForm.volume_mm3 = Math.round(volume);
+
+        // Максимальный и минимальный размеры
+        const sizes = [x, y, z];
+        this.findingForm.size_max_mm = Math.max(...sizes);
+        this.findingForm.size_min_mm = Math.min(...sizes);
+
+        // Прокрутить к рассчитанным метрикам
+        this.$nextTick(() => {
+          this.scrollToFormBottom();
+        });
+      } else {
+        // Сбрасываем значения если не все размеры заполнены
+        this.findingForm.volume_mm3 = null;
+        this.findingForm.size_max_mm = null;
+        this.findingForm.size_min_mm = null;
+      }
+    },
+
+    copySizeForRoundMass() {
+      const size = this.findingForm.size_x_mm;
+      if (size) {
+        // Для округлого образования все размеры одинаковые
+        this.findingForm.size_y_mm = size;
+        this.findingForm.size_z_mm = size;
+        this.calculateMetrics();
+      }
+    },
+
+    scrollToFormBottom() {
+      // Прокрутить к нижней части формы (к кнопкам)
+      this.$nextTick(() => {
+        if (this.$refs.modalContent) {
+          const formActions = this.$refs.modalContent.querySelector('.form-actions');
+          if (formActions) {
+            formActions.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+        }
+      });
     },
     editFinding(finding) {
       this.editingFinding = finding.id
-      this.findingForm = { ...finding }
+
+      // Преобразуем размеры из старого формата
+      let sizeObj = {
+        size_x_mm: null,
+        size_y_mm: null,
+        size_z_mm: null,
+        size_mm: ''
+      };
+
+      // Если есть индивидуальные размеры
+      if (finding.size_x_mm && finding.size_y_mm && finding.size_z_mm) {
+        sizeObj = {
+          size_x_mm: finding.size_x_mm,
+          size_y_mm: finding.size_y_mm,
+          size_z_mm: finding.size_z_mm,
+          size_mm: `${finding.size_x_mm}×${finding.size_y_mm}×${finding.size_z_mm}`
+        };
+      } else if (finding.size_mm) {
+        // Если размеры в старом формате "15x16x17"
+        const sizes = finding.size_mm.split(/[x×]/);
+        if (sizes.length >= 3) {
+          sizeObj = {
+            size_x_mm: parseInt(sizes[0]) || null,
+            size_y_mm: parseInt(sizes[1]) || null,
+            size_z_mm: parseInt(sizes[2]) || null,
+            size_mm: finding.size_mm
+          };
+        }
+      }
+
+      this.findingForm = {
+        ...finding,
+        ...sizeObj
+      }
+
       if (finding.associated_feature) {
         try {
           this.selectedFeatures = JSON.parse(finding.associated_feature)
@@ -269,15 +460,39 @@ export default {
         }
       }
       this.showAddFinding = true
+
+      // Пересчитать метрики если это объемное образование
+      if (this.findingForm.finding_type === 'Объемное образование' &&
+          this.findingForm.size_x_mm &&
+          this.findingForm.size_y_mm &&
+          this.findingForm.size_z_mm) {
+        this.calculateMetrics();
+      }
     },
     async saveFinding() {
       try {
+        // Формируем данные для отправки
         const data = {
           ...this.findingForm,
           mammography_id: this.mammography.id,
           associated_feature: this.findingForm.finding_type === 'Сопутствующие изменения'
-            ? JSON.stringify(this.selectedFeatures)
-            : null
+              ? JSON.stringify(this.selectedFeatures)
+              : null
+        }
+
+        // Для не-объемных образований сохраняем size_mm как строку
+        if (this.findingForm.finding_type !== 'Объемное образование' && this.findingForm.size_mm) {
+          data.size_mm = this.findingForm.size_mm;
+          // Очищаем отдельные размеры для не-объемных образований
+          data.size_x_mm = null;
+          data.size_y_mm = null;
+          data.size_z_mm = null;
+          data.volume_mm3 = null;
+          data.size_max_mm = null;
+          data.size_min_mm = null;
+        } else if (this.findingForm.finding_type === 'Объемное образование') {
+          // Для объемных образований формируем строку размеров
+          data.size_mm = `${data.size_x_mm}×${data.size_y_mm}×${data.size_z_mm}`;
         }
 
         if (this.editingFinding) {
@@ -316,6 +531,12 @@ export default {
         mass_shape: '',
         mass_margin: '',
         mass_density: '',
+        size_x_mm: null,
+        size_y_mm: null,
+        size_z_mm: null,
+        volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null,
         asymmetry_type: '',
         calcification_malignancy: '',
         calcification_morphology: '',
@@ -323,45 +544,54 @@ export default {
         size_mm: ''
       }
     }
+  },
+  watch: {
+    showAddFinding(newVal) {
+      if (newVal) {
+        // При открытии формы прокрутить к началу
+        this.$nextTick(() => {
+          if (this.$refs.modalContent) {
+            this.$refs.modalContent.scrollTop = 0;
+          }
+        });
+      }
+    }
   }
 }
 </script>
 
 <style scoped>
-.findings-modal {
-  z-index: 1001;
+/* Основные стили модального окна */
+.findings-modal.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 
-.findings-modal > .modal-content {
+.findings-modal .modal-content {
   background: white;
-  padding: 2rem;
   border-radius: 8px;
-}
-
-.inner-modal {
-  z-index: 1002 !important;
-  background: rgba(0, 0, 0, 0.7) !important;
-}
-
-.inner-modal-content {
-  background: white !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
-  padding: 2rem !important;
-  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .modal-xlarge {
   max-width: 1000px;
-  background: white;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
   padding: 2rem;
-  border-radius: 8px;
 }
 
 .modal-large {
   max-width: 800px;
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
+  width: 90%;
 }
 
 .modal-header {
@@ -400,6 +630,44 @@ export default {
   margin-bottom: 1rem;
 }
 
+/* Внутреннее модальное окно */
+.inner-modal-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1002;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.inner-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.inner-modal-content {
+  position: relative;
+  z-index: 1003;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+  width: 90%;
+  max-width: 800px;
+}
+
+/* Стили формы */
 .finding-details {
   background: #f8f9fa;
   padding: 1rem;
@@ -410,6 +678,27 @@ export default {
 .finding-details h5 {
   margin-bottom: 1rem;
   color: #495057;
+}
+
+.calculated-metrics {
+  background: #e9ecef;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.calculated-metrics div {
+  font-size: 0.9rem;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 0.25rem;
 }
 
 .checkbox-group {
@@ -464,6 +753,7 @@ export default {
   font-style: italic;
 }
 
+/* Кнопки */
 .btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -504,10 +794,12 @@ export default {
   cursor: pointer;
 }
 
+/* Форма */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
 
 .form-group {
@@ -522,11 +814,19 @@ export default {
 }
 
 .input {
-  padding: 0.5rem;
+  padding: 0.75rem;
   border: 1px solid #ced4da;
   border-radius: 4px;
   width: 100%;
   background: white;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .form-actions {
@@ -536,5 +836,40 @@ export default {
   margin-top: 1.5rem;
   padding-top: 1rem;
   border-top: 1px solid #dee2e6;
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding-bottom: 1rem;
+  margin-bottom: -1rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .inner-modal-content {
+    width: 95%;
+    max-height: 90vh;
+    padding: 1rem;
+  }
+
+  .modal-xlarge {
+    width: 95%;
+    padding: 1rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .inner-modal-content {
+    max-height: 90vh;
+  }
+
+  .finding-details {
+    max-height: 300px;
+    overflow-y: auto;
+  }
 }
 </style>
