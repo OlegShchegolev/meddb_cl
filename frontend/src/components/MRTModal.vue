@@ -626,7 +626,7 @@ export default {
       const z = this.findingForm.size_z_mm
 
       if (x && y && z) {
-        const volume = (4 / 3) * Math.PI * (x / 2) * (y / 2) * (z / 2)
+        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2)
         this.findingForm.volume_mm3 = Math.round(volume)
       } else {
         this.findingForm.volume_mm3 = null
@@ -657,12 +657,12 @@ export default {
     },
     editFinding(finding) {
       this.editingFindingId = finding.id
-      this.findingForm = {...finding}
+      this.findingForm = { ...finding }
       this.showAddFinding = true
     },
     editLymphNode(lymphNode) {
       this.editingLymphNodeId = lymphNode.id
-      this.lymphNodeForm = {...lymphNode}
+      this.lymphNodeForm = { ...lymphNode }
       this.showAddLymphNode = true
     },
     async saveFinding() {
@@ -736,6 +736,15 @@ export default {
           alert('Ошибка удаления')
         }
       }
+    },
+    // Публичные методы для вызова из родительского компонента
+    openAddFinding() {
+      this.activeTab = 'findings'
+      this.showAddFinding = true
+    },
+    openAddLymphNode() {
+      this.activeTab = 'lymphNodes'
+      this.showAddLymphNode = true
     }
   }
 }

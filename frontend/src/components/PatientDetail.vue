@@ -149,33 +149,6 @@
         <p v-else class="no-data">Нет данных</p>
       </div>
 
-      <!-- МРТ -->
-      <div v-if="activeTab === 'mrt'" class="section">
-        <div class="section-header">
-          <h3>МРТ исследования</h3>
-          <button @click="showMRTModal = true" class="btn btn-primary btn-sm">Добавить</button>
-        </div>
-        <table class="data-table" v-if="patient.mrts.length">
-          <thead>
-            <tr>
-              <th>Дата</th>
-              <th>Заключение</th>
-              <th>Комментарий</th>
-              <th>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in patient.mrts" :key="item.id">
-              <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.comment }}</td>
-              <td><button @click="deleteMRT(item.id)" class="btn-sm btn-danger">Удалить</button></td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else class="no-data">Нет данных</p>
-      </div>
-
       <!-- Гистология по биопсии -->
       <div v-if="activeTab === 'histology_biopsy'" class="section">
         <div class="section-header">
@@ -540,6 +513,52 @@
       </div>
     </div>
 
+    <!-- МРТ -->
+    <div v-if="activeTab === 'mrt'" class="section">
+      <div class="section-header">
+        <h3>МРТ исследования</h3>
+        <button @click="showMRTModal = true" class="btn btn-primary btn-sm">Добавить</button>
+      </div>
+      <table class="data-table" v-if="patient.mrts.length">
+        <thead>
+          <tr>
+            <th>Дата</th>
+            <th>Этап</th>
+            <th>BI-RADS справа</th>
+            <th>BI-RADS слева</th>
+            <th>BPE</th>
+            <th>Находки</th>
+            <th>Лимфоузлы</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="item in patient.mrts" :key="item.id">
+            <td>{{ item.exam_date }}</td>
+            <td>{{ item.study_stage }}</td>
+            <td>{{ item.birads_right }}</td>
+            <td>{{ item.birads_left }}</td>
+            <td>{{ item.bpe_level }}</td>
+            <td>
+              {{ item.findings?.length || 0 }}
+              <button @click="addMRTFinding(item)" class="btn-xs btn-success" title="Добавить находку">+</button>
+            </td>
+            <td>
+              {{ item.lymph_nodes?.length || 0 }}
+              <button @click="addMRTLymphNode(item)" class="btn-xs btn-success" title="Добавить лимфоузел">+</button>
+            </td>
+            <td>
+              <button @click="viewMRTDetails(item)" class="btn-sm btn-info">Подробно</button>
+              <button @click="editMRTStudy(item)" class="btn-sm btn-warning">Редактировать</button>
+              <button @click="deleteMRT(item.id)" class="btn-sm btn-danger">Удалить</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p v-else class="no-data">Нет данных</p>
+    </div>
+
+
     <!-- Модал МРТ -->
     <div v-if="showMRTModal || editingMRT" class="modal" @click.self="closeMRTModal">
       <div class="modal-content modal-large">
@@ -665,6 +684,7 @@
     <!-- Модал деталей МРТ -->
     <MRTModal
       v-if="selectedMRT"
+      ref="mrtModal"
       :mrt="selectedMRT"
       @close="selectedMRT = null"
       @updated="loadPatient"
@@ -966,10 +986,30 @@ export default {
       this.selectedMRT = item
     },
 
-    editMRT(item) {
+    editMRTStudy(item) {
       this.editingMRT = item.id
       this.mrtForm = { ...item }
       this.showMRTModal = true
+    },
+
+    addMRTFinding(mrtItem) {
+      // Открываем модал с деталями МРТ и автоматически открываем форму добавления находки
+      this.selectedMRT = mrtItem
+      this.$nextTick(() => {
+        if (this.$refs.mrtModal) {
+          this.$refs.mrtModal.openAddFinding()
+        }
+      })
+    },
+
+    addMRTLymphNode(mrtItem) {
+      // Открываем модал с деталями МРТ и автоматически открываем форму добавления лимфоузла
+      this.selectedMRT = mrtItem
+      this.$nextTick(() => {
+        if (this.$refs.mrtModal) {
+          this.$refs.mrtModal.openAddLymphNode()
+        }
+      })
     },
 
     async saveMRT() {
@@ -1091,5 +1131,38 @@ export default {
   border-radius: 4px;
   cursor: pointer;
   margin-right: 0.5rem;
+}
+
+/* Маленькая кнопка для добавления в ячейках таблицы */
+.btn-xs {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #218838;
+}
+
+/* Улучшенный вид для колонок с количеством */
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+  vertical-align: middle;
+}
+
+/* Группировка кнопок действий */
+.data-table td button {
+  white-space: nowrap;
 }
 </style>
