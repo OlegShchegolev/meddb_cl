@@ -71,7 +71,7 @@
         <p v-else class="no-data">Нет данных</p>
       </div>
 
-      <!-- Маммография -->
+<!-- Маммография -->
       <div v-if="activeTab === 'mammography'" class="section">
         <div class="section-header">
           <h3>Маммография</h3>
@@ -82,9 +82,10 @@
             <tr>
               <th>Дата</th>
               <th>Этап</th>
-              <th>Сторона</th>
-              <th>BI-RADS</th>
-              <th>ACR</th>
+              <th>BI-RADS справа</th>
+              <th>BI-RADS слева</th>
+              <th>ACR справа</th>
+              <th>ACR слева</th>
               <th>Находки</th>
               <th>Действия</th>
             </tr>
@@ -93,9 +94,10 @@
             <tr v-for="item in patient.mammographies" :key="item.id">
               <td>{{ item.exam_date }}</td>
               <td>{{ item.study_stage }}</td>
-              <td>{{ item.affected_side }}</td>
-              <td>{{ item.birads_category }}</td>
-              <td>{{ item.acr_density }}</td>
+              <td>{{ item.birads_category_right }}</td>
+              <td>{{ item.birads_category_left }}</td>
+              <td>{{ item.acr_density_right }}</td>
+              <td>{{ item.acr_density_left }}</td>
               <td>{{ item.findings?.length || 0 }}</td>
               <td>
                 <button @click="viewMammoFindings(item)" class="btn-sm btn-info">Находки</button>
@@ -119,9 +121,10 @@
             <tr>
               <th>Дата</th>
               <th>Этап</th>
-              <th>Сторона</th>
-              <th>BI-RADS</th>
-              <th>ACR</th>
+              <th>BI-RADS справа</th>
+              <th>BI-RADS слева</th>
+              <th>ACR справа</th>
+              <th>ACR слева</th>
               <th>BPE</th>
               <th>Находки LE</th>
               <th>Находки RC</th>
@@ -132,9 +135,10 @@
             <tr v-for="item in patient.contrast_mammographies" :key="item.id">
               <td>{{ item.exam_date }}</td>
               <td>{{ item.study_stage }}</td>
-              <td>{{ item.affected_side }}</td>
-              <td>{{ item.birads_category }}</td>
-              <td>{{ item.acr_density }}</td>
+              <td>{{ item.birads_category_right }}</td>
+              <td>{{ item.birads_category_left }}</td>
+              <td>{{ item.acr_density_right }}</td>
+              <td>{{ item.acr_density_left }}</td>
               <td>{{ item.bpe_level }}</td>
               <td>{{ item.le_findings?.length || 0 }}</td>
               <td>{{ item.rc_findings?.length || 0 }}</td>
@@ -152,53 +156,53 @@
       <!-- Гистология по биопсии -->
       <div v-if="activeTab === 'histology_biopsy'" class="section">
         <div class="section-header">
-          <h3>Гистология и ИГХ (по биопсии)</h3>
+          <h3>Гистология (по биопсии)</h3>
           <button @click="showHistBiopsyModal = true" class="btn btn-primary btn-sm">Добавить</button>
         </div>
         <table class="data-table" v-if="patient.histology_biopsies.length">
-          <thead>
+         <thead>
             <tr>
               <th>Дата</th>
-              <th>Заключение</th>
-              <th>ИГХ</th>
-              <th>Комментарий</th>
+              <th>Находки</th>
               <th>Действия</th>
             </tr>
-          </thead>
-          <tbody>
+         </thead>
+         <tbody>
             <tr v-for="item in patient.histology_biopsies" :key="item.id">
               <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.ihc_results }}</td>
-              <td>{{ item.comment }}</td>
-              <td><button @click="deleteHistBiopsy(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>{{ item.findings?.length || 0 }}</td>
+              <td>
+                <button @click="viewHistBiopsyDetails(item)" class="btn-sm btn-info">Подробно</button>
+                <button @click="deleteHistBiopsy(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
-          </tbody>
+         </tbody>
         </table>
         <p v-else class="no-data">Нет данных</p>
       </div>
 
       <!-- Цитология по биопсии -->
-      <div v-if="activeTab === 'cytology'" class="section">
+      <div v-if="activeTab === 'cytology_biopsy'" class="section">
         <div class="section-header">
           <h3>Цитология (по биопсии)</h3>
-          <button @click="showCytoModal = true" class="btn btn-primary btn-sm">Добавить</button>
+          <button @click="showCytoBiopsyModal = true" class="btn btn-primary btn-sm">Добавить</button>
         </div>
         <table class="data-table" v-if="patient.cytology_biopsies.length">
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Заключение</th>
-              <th>Комментарий</th>
+              <th>Находки</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in patient.cytology_biopsies" :key="item.id">
               <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.comment }}</td>
-              <td><button @click="deleteCyto(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>{{ item.findings?.length || 0 }}</td>
+              <td>
+                <button @click="viewCytoBiopsyDetails(item)" class="btn-sm btn-info">Подробно</button>
+                <button @click="deleteCytoBiopsy(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -265,7 +269,50 @@
           <div class="form-row">
             <div class="form-group">
               <label>День менструального цикла</label>
-              <input v-model.number="ultrasoundForm.menstrual_cycle_day" type="number" min="1" class="input">
+              <select v-model="ultrasoundForm.menstrual_cycle_day" class="input">
+                <option value="">Выберите</option>
+                <option value="Постменопауза">Постменопауза</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+                <option value="34">34</option>
+                <option value="35">35</option>
+                <option value="36">36</option>
+                <option value="37">37</option>
+                <option value="38">38</option>
+                <option value="39">39</option>
+                <option value="40">40</option>
+              </select>
             </div>
             <div class="form-group">
               <label>Положение пациента</label>
@@ -348,7 +395,7 @@
       </div>
     </div>
 
-    <!-- Modal Маммография (упрощенная) -->
+<!-- Modal Маммография -->
     <div v-if="showMammoModal || editingMammo" class="modal" @click.self="closeMammoModal">
       <div class="modal-content">
         <h3>{{ editingMammo ? 'Редактировать маммографию' : 'Добавить маммографию' }}</h3>
@@ -359,55 +406,46 @@
           </div>
           <div class="form-group">
             <label>Этап исследования (1-9)</label>
-              <select v-model="contrastForm.study_stage" class="input">
-                <option value="1">Выберите</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
+            <select v-model.number="mammoForm.study_stage" class="input">
+              <option :value="null">Выберите</option>
+              <option v-for="n in 9" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>BI-RADS справа</label>
+              <select v-model="mammoForm.birads_category_right" class="input">
+                <option value="">Выберите</option>
+                <option v-for="bi in biradsOptions" :key="bi" :value="bi">{{ bi }}</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label>BI-RADS слева</label>
+              <select v-model="mammoForm.birads_category_left" class="input">
+                <option value="">Выберите</option>
+                <option v-for="bi in biradsOptions" :key="bi" :value="bi">{{ bi }}</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Сторона поражения</label>
-            <select v-model="mammoForm.affected_side" class="input">
-              <option value="">Выберите</option>
-              <option value="Правая">Правая</option>
-              <option value="Левая">Левая</option>
-              <option value="Обе">Обе</option>
-            </select>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Плотность ACR справа</label>
+              <select v-model="mammoForm.acr_density_right" class="input">
+                <option value="">Выберите</option>
+                <option v-for="acr in acrOptions" :key="acr" :value="acr">{{ acr }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Плотность ACR слева</label>
+              <select v-model="mammoForm.acr_density_left" class="input">
+                <option value="">Выберите</option>
+                <option v-for="acr in acrOptions" :key="acr" :value="acr">{{ acr }}</option>
+              </select>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Категория BI-RADS</label>
-            <select v-model="mammoForm.birads_category" class="input">
-              <option value="">Выберите</option>
-              <option value="0">BI-RADS 0</option>
-              <option value="1">BI-RADS 1</option>
-              <option value="2">BI-RADS 2</option>
-              <option value="3">BI-RADS 3</option>
-              <option value="4">BI-RADS 4</option>
-              <option value="5">BI-RADS 5</option>
-              <option value="6">BI-RADS 6</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Плотность по ACR</label>
-            <select v-model="mammoForm.acr_density" class="input">
-              <option value="">Выберите</option>
-              <option value="A">ACR A</option>
-              <option value="B">ACR B</option>
-              <option value="C">ACR C</option>
-              <option value="D">ACR D</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Комментарий</label>
-            <textarea v-model="mammoForm.comment" class="input" rows="3"></textarea>
-          </div>
+
           <div class="form-actions">
             <button type="button" @click="closeMammoModal" class="btn btn-secondary">Отмена</button>
             <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -428,81 +466,77 @@
             </div>
             <div class="form-group">
               <label>Этап исследования (1-9)</label>
-              <select v-model="contrastForm.study_stage" class="input">
-                <option value="1">Выберите</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
+              <select v-model.number="contrastForm.study_stage" class="input">
+                <option :value="null">Выберите</option>
+                <option v-for="n in 9" :key="n" :value="n">{{ n }}</option>
               </select>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Сторона поражения</label>
-              <select v-model="contrastForm.affected_side" class="input">
+              <label>День менструального цикла</label>
+              <select v-model="contrastForm.menstrual_cycle_day" class="input">
                 <option value="">Выберите</option>
-                <option value="Правая">Правая</option>
-                <option value="Левая">Левая</option>
-                <option value="Обе">Обе</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Категория BI-RADS</label>
-              <select v-model="contrastForm.birads_category" class="input">
-                <option value="">Выберите</option>
-                <option value="0">BI-RADS 0</option>
-                <option value="1">BI-RADS 1</option>
-                <option value="2">BI-RADS 2</option>
-                <option value="3">BI-RADS 3</option>
-                <option value="4">BI-RADS 4</option>
-                <option value="5">BI-RADS 5</option>
-                <option value="6">BI-RADS 6</option>
+                <option value="Постменопауза">Постменопауза</option>
+                <option v-for="n in 40" :key="n" :value="n.toString()">{{ n }}</option>
               </select>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>Плотность по ACR</label>
-              <select v-model="contrastForm.acr_density" class="input">
+              <label>BI-RADS справа</label>
+              <select v-model="contrastForm.birads_category_right" class="input">
                 <option value="">Выберите</option>
-                <option value="A">ACR A</option>
-                <option value="B">ACR B</option>
-                <option value="C">ACR C</option>
-                <option value="D">ACR D</option>
+                <option v-for="bi in biradsOptions" :key="bi" :value="bi">{{ bi }}</option>
               </select>
             </div>
+            <div class="form-group">
+              <label>BI-RADS слева</label>
+              <select v-model="contrastForm.birads_category_left" class="input">
+                <option value="">Выберите</option>
+                <option v-for="bi in biradsOptions" :key="bi" :value="bi">{{ bi }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Плотность ACR справа</label>
+              <select v-model="contrastForm.acr_density_right" class="input">
+                <option value="">Выберите</option>
+                <option v-for="acr in acrOptions" :key="acr" :value="acr">{{ acr }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Плотность ACR слева</label>
+              <select v-model="contrastForm.acr_density_left" class="input">
+                <option value="">Выберите</option>
+                <option v-for="acr in acrOptions" :key="acr" :value="acr">{{ acr }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label>Степень фонового контрастирования (BPE)</label>
               <select v-model="contrastForm.bpe_level" class="input">
                 <option value="">Выберите</option>
-                <option value="Минимальная">Минимальная</option>
-                <option value="Слабая">Слабая</option>
-                <option value="Умеренная">Умеренная</option>
-                <option value="Выраженная">Выраженная</option>
+                <option value="минимальная">минимальная</option>
+                <option value="лёгкая">лёгкая</option>
+                <option value="умеренная">умеренная</option>
+                <option value="выраженная">выраженная</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>Симметрия фонового контрастирования</label>
-            <select v-model="contrastForm.bpe_symmetry" class="input">
-              <option value="">Выберите</option>
-              <option value="Симметричная">Симметричная</option>
-              <option value="Асимметричная">Асимметричная</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Комментарий</label>
-            <textarea v-model="contrastForm.comment" class="input" rows="3"></textarea>
+            <div class="form-group">
+              <label>Симметрия фонового контрастирования</label>
+              <select v-model="contrastForm.bpe_symmetry" class="input">
+                <option value="">Выберите</option>
+                <option value="Симметричная">Симметричная</option>
+                <option value="Асимметричная">Асимметричная</option>
+              </select>
+            </div>
           </div>
 
           <div class="form-actions">
@@ -589,7 +623,50 @@
           <div class="form-row">
             <div class="form-group">
               <label>День менструального цикла</label>
-              <input v-model.number="mrtForm.menstrual_cycle_day" type="number" min="1" class="input">
+              <select v-model="mrtForm.menstrual_cycle_day" class="input">
+                <option value="">Выберите</option>
+                <option value="Постменопауза">Постменопауза</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+                <option value="34">34</option>
+                <option value="35">35</option>
+                <option value="36">36</option>
+                <option value="37">37</option>
+                <option value="38">38</option>
+                <option value="39">39</option>
+                <option value="40">40</option>
+              </select>
             </div>
             <div class="form-group">
               <label>BI-RADS справа</label>
@@ -690,23 +767,44 @@
       @updated="loadPatient"
     />
 
-    <HistologyModal
-      v-if="showHistBiopsyModal"
-      title="Добавить гистологию (биопсия)"
-      :form="histBiopsyForm"
-      @close="showHistBiopsyModal = false"
-      @save="saveHistBiopsy"
-    />
+    <div v-if="showHistBiopsyModal || editingHistBiopsy" class="modal" @click.self="closeHistBiopsyModal">
+      <div class="modal-content modal-large">
+        <h3>{{ editingHistBiopsy ? 'Редактировать Гистологию (по биопсии)' : 'Добавить Гистологию (по биопсии)' }}</h3>
+        <form @submit.prevent="saveHistBiopsy">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Дата исследования *</label>
+              <input v-model="histBiopsyForm.exam_date" type="date" required class="input">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" @click="closeHistBiopsyModal" class="btn btn-secondary">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
-    <SimpleModal
-      v-if="showCytoModal"
-      title="Добавить цитологию"
-      :form="cytoForm"
-      @close="showCytoModal = false"
-      @save="saveCyto"
-    />
+    <!-- Модал Цитология по биопсии -->
+  <div v-if="showCytoBiopsyModal || editingCytoBiopsy" class="modal" @click.self="closeCytoBiopsyModal">
+    <div class="modal-content modal-large">
+      <h3>{{ editingCytoBiopsy ? 'Редактировать Цитологию (по биопсии)' : 'Добавить Цитологию (по биопсии)' }}</h3>
+      <form @submit.prevent="saveCytoBiopsy">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Дата исследования *</label>
+            <input v-model="cytoBiopsyForm.exam_date" type="date" required class="input">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" @click="closeCytoBiopsyModal" class="btn btn-secondary">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
-    <HistologyModal
+    <HistologyPostOpModal
       v-if="showHistPostopModal"
       title="Добавить гистологию (послеоперационная)"
       :form="histPostopForm"
@@ -736,6 +834,20 @@
     @close="selectedUltrasound = null"
     @updated="loadPatient"
   />
+  <!-- Модал гистологии по биопсии -->
+  <HistologyBiopsyFindingsModal
+    v-if="selectedHistologyBiopsy"
+    :histology_biopsy="selectedHistologyBiopsy"
+    @close="selectedHistologyBiopsy = null"
+    @updated="loadPatient"
+  />
+  <!-- Модал цитологии по биопсии -->
+  <CytologyBiopsyFindingsModal
+    v-if="selectedCytologyBiopsy"
+    :cytology_biopsy="selectedCytologyBiopsy"
+    @close="selectedCytologyBiopsy = null"
+    @updated="loadPatient"
+  />
 </template>
 
 <script>
@@ -744,13 +856,17 @@ import MammographyFindingsModal from './MammographyFindingsModal.vue'
 import ContrastMammographyModal from './ContrastMammographyModal.vue'
 import UltrasoundModal from './UltrasoundModal.vue'
 import MRTModal from './MRTModal.vue' // Добавьте этот импорт
+import HistologyBiopsyFindingsModal from "./HistologyBiopsyFindingsModal.vue" // Добавьте этот импорт
+import CytologyBiopsyFindingsModal from './CytologyBiopsyFindingsModal.vue';
 
 export default {
   components: {
     MammographyFindingsModal,
     ContrastMammographyModal,
     UltrasoundModal,
-    MRTModal
+    MRTModal,
+    HistologyBiopsyFindingsModal,
+    CytologyBiopsyFindingsModal
   },
   data() {
     return {
@@ -762,15 +878,18 @@ export default {
         { id: 'contrast', label: 'Контрастная маммография' },
         { id: 'mrt', label: 'МРТ' },
         { id: 'histology_biopsy', label: 'Гистология (биопсия)' },
-        { id: 'cytology', label: 'Цитология' },
+        { id: 'cytology_biopsy', label: 'Цитология (биопсия)' },
         { id: 'histology_postop', label: 'Гистология (послеоп.)' }
       ],
+      biradsOptions: ['BI-RADS-0', 'BI-RADS-1', 'BI-RADS-2', 'BI-RADS-3',
+                      'BI-RADS-4a', 'BI-RADS-4b', 'BI-RADS-4c', 'BI-RADS-5', 'BI-RADS-6'],
+      acrOptions: ['A', 'B', 'C', 'D'],
       showUltrasoundModal: false,
       showMammoModal: false,
       showContrastModal: false,
       showMRTModal: false,
       showHistBiopsyModal: false,
-      showCytoModal: false,
+      showCytoBiopsyModal: false,
       showHistPostopModal: false,
       selectedMammography: null,
       selectedContrastMammo: null,
@@ -780,7 +899,7 @@ export default {
       editingUltrasound: null,
       editingMRT: null,
       editingHistBiopsy: null,
-      editingCyto: null,
+      editingCytoBiopsy: null,
       editingHistPostop: null,
       ultrasoundForm: {
         exam_date: '',
@@ -798,22 +917,22 @@ export default {
       mammoForm: {
         exam_date: '',
         study_stage: null,
-        affected_side: '',
-        birads_category: '',
-        acr_density: '',
-        comment: ''
+        menstrual_cycle_day: '',
+        birads_category_left: '',
+        birads_category_right: '',
+        acr_density_left: '',
+        acr_density_right: '',
       },
       contrastForm: {
         exam_date: '',
         study_stage: null,
-        affected_side: '',
-        birads_category: '',
-        acr_density: '',
+        menstrual_cycle_day: '',
+        birads_category_left: '',
+        birads_category_right: '',
+        acr_density_left: '',
+        acr_density_right: '',
         bpe_level: '',
         bpe_symmetry: '',
-        comparison_available: false,
-        dynamics: '',
-        comment: ''
       },
       selectedMRT: null,
       editingMRT: null,
@@ -831,9 +950,12 @@ export default {
         dynamics: '',
         comment: ''
       },
-      histBiopsyForm: { exam_date: '', findings: '', ihc_results: '', comment: '' },
-      cytoForm: { exam_date: '', findings: '', comment: '' },
+      histBiopsyForm: { exam_date: '' },  // убрать findings
+      cytoBiopsyForm: { exam_date: '' },         // убрать findings
+      selectedHistologyBiopsy: null,
+      selectedCytologyBiopsy: null,
       histPostopForm: { exam_date: '', findings: '', ihc_results: '', comment: '' }
+
     }
   },
   mounted() {
@@ -924,10 +1046,11 @@ export default {
       this.mammoForm = {
         exam_date: '',
         study_stage: null,
-        affected_side: '',
-        birads_category: '',
-        acr_density: '',
-        comment: ''
+        menstrual_cycle_day: '',
+        birads_category_left: '',
+        birads_category_right: '',
+        acr_density_left: '',
+        acr_density_right: '',
       }
     },
     async deleteMammo(id) {
@@ -963,14 +1086,13 @@ export default {
       this.contrastForm = {
         exam_date: '',
         study_stage: null,
-        affected_side: '',
-        birads_category: '',
-        acr_density: '',
+        menstrual_cycle_day: '',
+        birads_category_left: '',
+        birads_category_right: '',
+        acr_density_left: '',
+        acr_density_right: '',
         bpe_level: '',
         bpe_symmetry: '',
-        comparison_available: false,
-        dynamics: '',
-        comment: ''
       }
     },
     viewContrastDetails(item) {
@@ -1026,7 +1148,7 @@ export default {
       }
     },
 
-    closeMRTModal() {
+    async closeMRTModal() {
       this.showMRTModal = false
       this.editingMRT = null
       this.mrtForm = {
@@ -1045,6 +1167,22 @@ export default {
       }
     },
 
+    async closeHistBiopsyModal() {
+      this.showHistBiopsyModal = false
+      this.editingHistBiopsy = null
+      this.histBiopsyForm = {
+        exam_date: '',
+      }
+    },
+
+    async closeCytoBiopsyModal() {
+      this.showCytoBiopsyModal = false
+      this.editingCytoBiopsy = null
+      this.cytoBiopsyForm = {
+        exam_date: '',
+      }
+    },
+
     async deleteMRT(id) {
       if (confirm('Удалить запись?')) {
         await api.deleteMRT(id)
@@ -1052,9 +1190,17 @@ export default {
       }
     },
     async saveHistBiopsy() {
-      await api.createHistologyBiopsy({ ...this.histBiopsyForm, patient_id: this.patient.id })
-      this.showHistBiopsyModal = false
-      this.loadPatient()
+      try {
+        if (this.editingHistBiopsy) {
+          await api.updateHistologyBiopsy(this.editingHistBiopsy, { ...this.histBiopsyForm, patient_id: this.patient.id })
+        } else {
+          await api.createHistologyBiopsy({ ...this.histBiopsyForm, patient_id: this.patient.id })
+        }
+        this.closeHistBiopsyModal()
+        this.loadPatient()
+      } catch (error) {
+        alert('Ошибка сохранения')
+      }
     },
     async deleteHistBiopsy(id) {
       if (confirm('Удалить запись?')) {
@@ -1062,16 +1208,48 @@ export default {
         this.loadPatient()
       }
     },
-    async saveCyto() {
-      await api.createCytologyBiopsy({ ...this.cytoForm, patient_id: this.patient.id })
-      this.showCytoModal = false
-      this.loadPatient()
+    async addHistBiopsyFinding(hstBpsItem) {
+      // Открываем модал с деталями МРТ и автоматически открываем форму добавления находки
+      this.selectedHistologyBiopsy = hstBpsItem
+      this.$nextTick(() => {
+        if (this.$refs.HistologyBiopsyFindingsModal) {
+          this.$refs.HistologyBiopsyFindingsModal.openAddFinding()
+        }
+      })
     },
-    async deleteCyto(id) {
+    async viewHistBiopsyDetails(item) {
+      this.selectedHistologyBiopsy = item
+    },
+    async saveCytoBiopsy() {
+      try {
+        if (this.editingCytoBiopsy) {
+          await api.updateCytologyBiopsy(this.editingCytoBiopsy, { ...this.cytoBiopsyForm, patient_id: this.patient.id })
+        } else {
+          await api.createCytologyBiopsy({ ...this.cytoBiopsyForm, patient_id: this.patient.id })
+        }
+        this.closeCytoBiopsyModal()
+        this.loadPatient()
+      } catch (error) {
+        alert('Ошибка сохранения')
+      }
+    },
+    async deleteCytoBiopsy(id) {
       if (confirm('Удалить запись?')) {
         await api.deleteCytologyBiopsy(id)
         this.loadPatient()
       }
+    },
+    async addCytoBiopsyFinding(hstBpsItem) {
+      // Открываем модал с деталями МРТ и автоматически открываем форму добавления находки
+      this.selectedHistologyBiopsy = hstBpsItem
+      this.$nextTick(() => {
+        if (this.$refs.CytologyBiopsyFindingsModal) {
+          this.$refs.CytologyBiopsyFindingsModal.openAddFinding()
+        }
+      })
+    },
+    async viewCytoBiopsyDetails(item) {
+      this.selectedCytologyBiopsy = item
     },
     async saveHistPostop() {
       await api.createHistologyPostop({ ...this.histPostopForm, patient_id: this.patient.id })

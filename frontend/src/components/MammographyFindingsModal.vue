@@ -34,11 +34,9 @@
                 <template v-if="finding.size_x_mm && finding.size_y_mm && finding.size_z_mm">
                   {{ finding.size_x_mm }}×{{ finding.size_y_mm }}×{{ finding.size_z_mm }}
                 </template>
-                <template v-else>
-                  {{ finding.size_mm }}
-                </template>
+                <template v-else>-</template>
               </td>
-              <td>{{ finding.volume_mm3 ? finding.volume_mm3 + ' мм³' : '-' }}</td>
+              <td>{{ finding.volume_mm3 || '-' }}</td>
               <td>
                 <button @click="editFinding(finding)" class="btn-sm btn-warning">Изменить</button>
                 <button @click="deleteFinding(finding.id)" class="btn-sm btn-danger">Удалить</button>
@@ -56,10 +54,6 @@
           <h4>{{ editingFinding ? 'Редактировать находку' : 'Добавить находку' }}</h4>
           <form @submit.prevent="saveFinding">
             <div class="form-row">
-<!--              <div class="form-group">-->
-<!--                <label>Номер находки (1-9) *</label>-->
-<!--                <input v-model.number="findingForm.finding_number" type="number" min="1" max="9" required class="input">-->
-<!--              </div>-->
               <div class="form-group">
                 <label>Локализация по квадрантам *</label>
                 <select v-model="findingForm.quadrant_location" required class="input">
@@ -117,13 +111,12 @@
 
               <!-- Размеры для объемного образования -->
               <div v-if="findingForm.mass_shape === 'Округлая'" class="form-group">
-                <label>Размер (мм) *</label>
+                <label>Размер (мм)</label>
                 <input
                   v-model.number="findingForm.size_x_mm"
                   @input="copySizeForRoundMass"
                   type="number"
                   min="1"
-                  required
                   class="input"
                   placeholder="Введите размер"
                 >
@@ -131,37 +124,34 @@
               </div>
               <div v-else class="form-row">
                 <div class="form-group">
-                  <label>Размер X (мм) *</label>
+                  <label>Размер X (мм)</label>
                   <input
                     v-model.number="findingForm.size_x_mm"
                     @input="calculateMetrics"
                     type="number"
                     min="1"
-                    required
                     class="input"
                     placeholder="X размер"
                   >
                 </div>
                 <div class="form-group">
-                  <label>Размер Y (мм) *</label>
+                  <label>Размер Y (мм)</label>
                   <input
                     v-model.number="findingForm.size_y_mm"
                     @input="calculateMetrics"
                     type="number"
                     min="1"
-                    required
                     class="input"
                     placeholder="Y размер"
                   >
                 </div>
                 <div class="form-group">
-                  <label>Размер Z (мм) *</label>
+                  <label>Размер Z (мм)</label>
                   <input
                     v-model.number="findingForm.size_z_mm"
                     @input="calculateMetrics"
                     type="number"
                     min="1"
-                    required
                     class="input"
                     placeholder="Z размер"
                   >
@@ -171,6 +161,8 @@
               <!-- Рассчитанные параметры -->
               <div v-if="findingForm.size_x_mm && findingForm.size_y_mm && findingForm.size_z_mm" class="calculated-metrics">
                 <div><strong>Объём:</strong> {{ findingForm.volume_mm3 }} мм³</div>
+              </div>
+              <div v-if="findingForm.size_max_mm && findingForm.size_min_mm" class="calculated-metrics">
                 <div><strong>Макс. размер:</strong> {{ findingForm.size_max_mm }} мм</div>
                 <div><strong>Мин. размер:</strong> {{ findingForm.size_min_mm }} мм</div>
               </div>
@@ -187,15 +179,6 @@
                     <option v-for="type in asymmetryTypes" :key="type" :value="type">{{ type }}</option>
                   </select>
                 </div>
-<!--                <div class="form-group">-->
-<!--                  <label>Размеры (мм) *</label>-->
-<!--                  <input-->
-<!--                    v-model="findingForm.size_mm"-->
-<!--                    placeholder="15x16x17"-->
-<!--                    required-->
-<!--                    class="input"-->
-<!--                  >-->
-<!--                </div>-->
               </div>
             </div>
 
@@ -224,20 +207,11 @@
                     <option v-for="dist in calcificationDistribution" :key="dist" :value="dist">{{ dist }}</option>
                   </select>
                 </div>
-<!--                <div class="form-group">-->
-<!--                  <label>Размеры зоны (мм) *</label>-->
-<!--                  <input-->
-<!--                    v-model="findingForm.size_mm"-->
-<!--                    placeholder="15x16x17"-->
-<!--                    required-->
-<!--                    class="input"-->
-<!--                  >-->
-<!--                </div>-->
               </div>
             </div>
 
             <!-- Поля для "Сопутствующие изменения" -->
-            <div v-if="findingForm.finding_type === 'Сопутствующие изменения'" class="finding-details">
+            <div v-if="findingForm.finding_type === 'Сопутствующие признаки'" class="finding-details">
               <h5>Сопутствующие изменения</h5>
               <div class="form-group">
                 <label>Вид признака (можно выбрать несколько)</label>
@@ -252,6 +226,31 @@
                   </label>
                 </div>
               </div>
+            </div>
+
+            <!-- Сравнение с предыдущими -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Сравнение с предыдущими исследованиями</label>
+                <select v-model="findingForm.comparison_available" class="input">
+                  <option :value="false">Нет</option>
+                  <option :value="true">Да</option>
+                </select>
+              </div>
+              <div class="form-group" v-if="findingForm.comparison_available">
+                <label>Динамика</label>
+                <select v-model="findingForm.dynamics" class="input">
+                  <option value="">Выберите</option>
+                  <option value="Без динамики">Без динамики</option>
+                  <option value="Положительная динамика">Положительная динамика</option>
+                  <option value="Отрицательная динамика">Отрицательная динамика</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Комментарий</label>
+              <textarea v-model="findingForm.comment" class="input" rows="3"></textarea>
             </div>
 
             <div class="form-actions">
@@ -300,7 +299,10 @@ export default {
         calcification_malignancy: '',
         calcification_morphology: '',
         calcification_distribution: '',
-        size_mm: ''
+        associated_feature: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
       },
       // Справочники
       quadrantLocations: dict.QUADRANT_LOCATIONS,
@@ -344,8 +346,7 @@ export default {
         asymmetry_type: '',
         calcification_malignancy: '',
         calcification_morphology: '',
-        calcification_distribution: '',
-        size_mm: ''
+        calcification_distribution: ''
       }
       this.selectedFeatures = []
 
@@ -371,16 +372,29 @@ export default {
       const y = this.findingForm.size_y_mm;
       const z = this.findingForm.size_z_mm;
 
+        // Рассчитываем max и min даже если введен только один размер
+        // Рассчитываем max и min даже если введен только один размер
+      if (x || y || z) {
+        // Фильтруем только заполненные значения
+        const sizes = [x, y, z].filter(size => size !== null && size !== undefined && size !== '');
+
+        if (sizes.length > 0) {
+          this.findingForm.size_max_mm = Math.max(...sizes);
+          this.findingForm.size_min_mm = Math.min(...sizes);
+        } else {
+          this.findingForm.size_max_mm = null;
+          this.findingForm.size_min_mm = null;
+        }
+      } else {
+        this.findingForm.size_max_mm = null;
+        this.findingForm.size_min_mm = null;
+      }
+
       if (x && y && z) {
         // Объём для эллипсоида: V = (4/3) * π * a * b * c
         // где a, b, c - полуоси (размеры / 2)
-        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
+        const volume = (4 / 3) * Math.PI * (x / 2) * (y / 2) * (z / 2);
         this.findingForm.volume_mm3 = Math.round(volume);
-
-        // Максимальный и минимальный размеры
-        const sizes = [x, y, z];
-        this.findingForm.size_max_mm = Math.max(...sizes);
-        this.findingForm.size_min_mm = Math.min(...sizes);
 
         // Прокрутить к рассчитанным метрикам
         this.$nextTick(() => {
@@ -389,8 +403,6 @@ export default {
       } else {
         // Сбрасываем значения если не все размеры заполнены
         this.findingForm.volume_mm3 = null;
-        this.findingForm.size_max_mm = null;
-        this.findingForm.size_min_mm = null;
       }
     },
 
@@ -410,7 +422,7 @@ export default {
         if (this.$refs.modalContent) {
           const formActions = this.$refs.modalContent.querySelector('.form-actions');
           if (formActions) {
-            formActions.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            formActions.scrollIntoView({behavior: 'smooth', block: 'end'});
           }
         }
       });
@@ -418,39 +430,7 @@ export default {
     editFinding(finding) {
       this.editingFinding = finding.id
 
-      // Преобразуем размеры из старого формата
-      let sizeObj = {
-        size_x_mm: null,
-        size_y_mm: null,
-        size_z_mm: null,
-        size_mm: ''
-      };
-
-      // Если есть индивидуальные размеры
-      if (finding.size_x_mm && finding.size_y_mm && finding.size_z_mm) {
-        sizeObj = {
-          size_x_mm: finding.size_x_mm,
-          size_y_mm: finding.size_y_mm,
-          size_z_mm: finding.size_z_mm,
-          size_mm: `${finding.size_x_mm}×${finding.size_y_mm}×${finding.size_z_mm}`
-        };
-      } else if (finding.size_mm) {
-        // Если размеры в старом формате "15x16x17"
-        const sizes = finding.size_mm.split(/[x×]/);
-        if (sizes.length >= 3) {
-          sizeObj = {
-            size_x_mm: parseInt(sizes[0]) || null,
-            size_y_mm: parseInt(sizes[1]) || null,
-            size_z_mm: parseInt(sizes[2]) || null,
-            size_mm: finding.size_mm
-          };
-        }
-      }
-
-      this.findingForm = {
-        ...finding,
-        ...sizeObj
-      }
+      this.findingForm = {...finding}
 
       if (finding.associated_feature) {
         try {
@@ -475,24 +455,19 @@ export default {
         const data = {
           ...this.findingForm,
           mammography_id: this.mammography.id,
-          associated_feature: this.findingForm.finding_type === 'Сопутствующие изменения'
+          associated_feature: this.findingForm.finding_type === 'Сопутствующие признаки'
               ? JSON.stringify(this.selectedFeatures)
               : null
         }
 
-        // Для не-объемных образований сохраняем size_mm как строку
-        if (this.findingForm.finding_type !== 'Объемное образование' && this.findingForm.size_mm) {
-          data.size_mm = this.findingForm.size_mm;
-          // Очищаем отдельные размеры для не-объемных образований
+        // Для не-объемных образований очищаем отдельные размеры
+        if (this.findingForm.finding_type !== 'Объемное образование') {
           data.size_x_mm = null;
           data.size_y_mm = null;
           data.size_z_mm = null;
           data.volume_mm3 = null;
           data.size_max_mm = null;
           data.size_min_mm = null;
-        } else if (this.findingForm.finding_type === 'Объемное образование') {
-          // Для объемных образований формируем строку размеров
-          data.size_mm = `${data.size_x_mm}×${data.size_y_mm}×${data.size_z_mm}`;
         }
 
         if (this.editingFinding) {
@@ -541,7 +516,10 @@ export default {
         calcification_malignancy: '',
         calcification_morphology: '',
         calcification_distribution: '',
-        size_mm: ''
+        associated_feature: '',
+        comparison_available: false,
+        dynamics: '',
+        comment: ''
       }
     }
   },
@@ -568,7 +546,7 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;

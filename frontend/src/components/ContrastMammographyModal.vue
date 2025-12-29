@@ -10,9 +10,10 @@
       <div class="info-section">
         <div class="info-grid">
           <div><strong>Этап:</strong> {{ contrastMammo.study_stage }}</div>
-          <div><strong>Сторона:</strong> {{ contrastMammo.affected_side }}</div>
-          <div><strong>BI-RADS:</strong> {{ contrastMammo.birads_category }}</div>
-          <div><strong>ACR:</strong> {{ contrastMammo.acr_density }}</div>
+          <div><strong>BI-RADS справа:</strong> {{ contrastMammo.birads_category_right }}</div>
+          <div><strong>BI-RADS слева:</strong> {{ contrastMammo.birads_category_left }}</div>
+          <div><strong>ACR справа:</strong> {{ contrastMammo.acr_density_right }}</div>
+          <div><strong>ACR слева:</strong> {{ contrastMammo.acr_density_left }}</div>
           <div><strong>BPE уровень:</strong> {{ contrastMammo.bpe_level }}</div>
           <div><strong>BPE симметрия:</strong> {{ contrastMammo.bpe_symmetry }}</div>
         </div>
@@ -167,30 +168,82 @@
 
               <!-- Размеры -->
               <div v-if="leFindingForm.mass_shape === 'Округлая'" class="form-group">
-                <label>Размер (мм) *</label>
-                <input v-model.number="leFindingForm.size_x_mm" @input="copySizeForRoundMass('le')" type="number" min="1" required class="input">
+                <label>Размер (мм)</label>
+                <input v-model.number="leFindingForm.size_x_mm" @input="copySizeForRoundMass('le')" type="number" min="1" class="input">
                 <small class="text-muted">Для округлого образования все размеры будут одинаковыми</small>
               </div>
               <div v-else class="form-row">
                 <div class="form-group">
-                  <label>Размер X (мм) *</label>
-                  <input v-model.number="leFindingForm.size_x_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
+                  <label>Размер X (мм)</label>
+                  <input v-model.number="leFindingForm.size_x_mm" @input="calculateLEMetrics" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
-                  <label>Размер Y (мм) *</label>
-                  <input v-model.number="leFindingForm.size_y_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
+                  <label>Размер Y (мм)</label>
+                  <input v-model.number="leFindingForm.size_y_mm" @input="calculateLEMetrics" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
-                  <label>Размер Z (мм) *</label>
-                  <input v-model.number="leFindingForm.size_z_mm" @input="calculateLEMetrics" type="number" min="1" required class="input">
+                  <label>Размер Z (мм)</label>
+                  <input v-model.number="leFindingForm.size_z_mm" @input="calculateLEMetrics" type="number" min="1" class="input">
                 </div>
               </div>
 
               <!-- Рассчитанные параметры -->
               <div v-if="leFindingForm.size_x_mm && leFindingForm.size_y_mm && leFindingForm.size_z_mm" class="calculated-metrics">
                 <div><strong>Объём:</strong> {{ leFindingForm.volume_mm3 }} мм³</div>
+              </div>
+              <div v-if="leFindingForm.size_max_mm && leFindingForm.size_min_mm" class="calculated-metrics">
                 <div><strong>Макс. размер:</strong> {{ leFindingForm.size_max_mm }} мм</div>
                 <div><strong>Мин. размер:</strong> {{ leFindingForm.size_min_mm }} мм</div>
+              </div>
+            </div>
+
+            <!-- Кальцинаты -->
+            <div v-if="leFindingForm.finding_type === 'Кальцинаты'" class="finding-details">
+              <h5>Описание кальцинатов</h5>
+              <div class="form-group">
+                <label>Вероятность злокачественности</label>
+                <select v-model="leFindingForm.calcification_malignancy" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="mal in calcificationMalignancy" :key="mal" :value="mal">{{ mal }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Морфология</label>
+                <select v-model="leFindingForm.calcification_morphology" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="morph in calcificationMorphology" :key="morph" :value="morph">{{ morph }}</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Распределение</label>
+                <select v-model="leFindingForm.calcification_distribution" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="dist in calcificationDistribution" :key="dist" :value="dist">{{ dist }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Асимметрия -->
+            <div v-if="leFindingForm.finding_type === 'Асимметрия'" class="finding-details">
+              <h5>Описание асимметрии</h5>
+              <div class="form-group">
+                <label>Вид асимметрии</label>
+                <select v-model="leFindingForm.asymmetry_type" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="type in asymmetryTypes" :key="type" :value="type">{{ type }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Сопутствующие признаки -->
+            <div v-if="leFindingForm.finding_type === 'Сопутствующие признаки'" class="finding-details">
+              <h5>Сопутствующие признаки</h5>
+              <div class="form-group">
+                <label>Признаки</label>
+                <select v-model="leFindingForm.associated_features" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="feature in associatedFeatures" :key="feature" :value="feature">{{ feature }}</option>
+                </select>
               </div>
             </div>
 
@@ -229,6 +282,26 @@
                     <option v-for="intensity in enhancementIntensity" :key="intensity" :value="intensity">{{ intensity }}</option>
                   </select>
                 </div>
+              </div>
+            </div>
+
+            <!-- Сравнение и динамика -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Сравнение с предыдущими</label>
+                <select v-model="leFindingForm.comparison_available" class="input">
+                  <option :value="false">Нет</option>
+                  <option :value="true">Да</option>
+                </select>
+              </div>
+              <div class="form-group" v-if="leFindingForm.comparison_available">
+                <label>Динамика</label>
+                <select v-model="leFindingForm.dynamics" class="input">
+                  <option value="">Выберите</option>
+                  <option value="Без динамики">Без динамики</option>
+                  <option value="Положительная динамика">Положительная динамика</option>
+                  <option value="Отрицательная динамика">Отрицательная динамика</option>
+                </select>
               </div>
             </div>
 
@@ -273,7 +346,7 @@
             </div>
 
             <!-- Объемное образование -->
-            <div v-if="rcFindingForm.finding_type === 'Объемное образование'" class="finding-details">
+            <div v-if="rcFindingForm.finding_type === 'Образование'" class="finding-details">
               <h5>Описание объемного образования</h5>
               <div class="form-row">
                 <div class="form-group">
@@ -300,22 +373,24 @@
               </div>
               <div v-else class="form-row">
                 <div class="form-group">
-                  <label>Размер X (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_x_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
+                  <label>Размер X (мм)</label>
+                  <input v-model.number="rcFindingForm.size_x_mm" @input="calculateRCMetrics" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
-                  <label>Размер Y (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_y_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
+                  <label>Размер Y (мм)</label>
+                  <input v-model.number="rcFindingForm.size_y_mm" @input="calculateRCMetrics" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
-                  <label>Размер Z (мм) *</label>
-                  <input v-model.number="rcFindingForm.size_z_mm" @input="calculateRCMetrics" type="number" min="1" required class="input">
+                  <label>Размер Z (мм)</label>
+                  <input v-model.number="rcFindingForm.size_z_mm" @input="calculateRCMetrics" type="number" min="1" class="input">
                 </div>
               </div>
 
               <!-- Рассчитанные параметры -->
               <div v-if="rcFindingForm.size_x_mm && rcFindingForm.size_y_mm && rcFindingForm.size_z_mm" class="calculated-metrics">
                 <div><strong>Объём:</strong> {{ rcFindingForm.volume_mm3 }} мм³</div>
+              </div>
+              <div v-if="rcFindingForm.size_max_mm && rcFindingForm.size_min_mm" class="calculated-metrics">
                 <div><strong>Макс. размер:</strong> {{ rcFindingForm.size_max_mm }} мм</div>
                 <div><strong>Мин. размер:</strong> {{ rcFindingForm.size_min_mm }} мм</div>
               </div>
@@ -374,6 +449,26 @@
               </select>
             </div>
 
+            <!-- Сравнение и динамика -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Сравнение с предыдущими</label>
+                <select v-model="rcFindingForm.comparison_available" class="input">
+                  <option :value="false">Нет</option>
+                  <option :value="true">Да</option>
+                </select>
+              </div>
+              <div class="form-group" v-if="rcFindingForm.comparison_available">
+                <label>Динамика</label>
+                <select v-model="rcFindingForm.dynamics" class="input">
+                  <option value="">Выберите</option>
+                  <option value="Без динамики">Без динамики</option>
+                  <option value="Положительная динамика">Положительная динамика</option>
+                  <option value="Отрицательная динамика">Отрицательная динамика</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-actions">
               <button type="button" @click="closeRCFindingModal" class="btn btn-secondary">Отмена</button>
               <button type="submit" class="btn btn-primary">Сохранить</button>
@@ -415,6 +510,11 @@ export default {
       massShapes: dict.MASS_SHAPES,
       massMargins: dict.MASS_MARGINS,
       massDensities: dict.MASS_DENSITY,
+      asymmetryTypes: dict.ASYMMETRY_TYPES,
+      calcificationMalignancy: dict.CALCIFICATION_MALIGNANCY,
+      calcificationMorphology: dict.CALCIFICATION_MORPHOLOGY,
+      calcificationDistribution: dict.CALCIFICATION_DISTRIBUTION,
+      associatedFeatures: dict.ASSOCIATED_FEATURES,
       enhancementPatterns: dict.ENHANCEMENT_PATTERNS,
       enhancementDegrees: dict.ENHANCEMENT_DEGREES,
       enhancementIntensity: dict.ENHANCEMENT_INTENSITY,
@@ -435,6 +535,11 @@ export default {
         mass_shape: '',
         mass_margin: '',
         mass_density: '',
+        asymmetry_type: '',
+        calcification_malignancy: '',
+        calcification_morphology: '',
+        calcification_distribution: '',
+        associated_features: '',
         size_x_mm: null,
         size_y_mm: null,
         size_z_mm: null,
@@ -444,7 +549,9 @@ export default {
         visible_on_rc: '',
         rc_internal_enhancement: '',
         rc_enhancement_degree: '',
-        rc_enhancement_intensity: ''
+        rc_enhancement_intensity: '',
+        comparison_available: false,
+        dynamics: ''
       }
     },
     getEmptyRCForm() {
@@ -465,53 +572,66 @@ export default {
         distribution: '',
         internal_enhancement_pattern: '',
         asymmetric_enhancement_pattern: '',
-        enhancement_intensity: ''
+        enhancement_intensity: '',
+        comparison_available: false,
+        dynamics: ''
       }
     },
     calculateLEMetrics() {
-      // Рассчитываем объём, максимальный и минимальный размеры
       const x = this.leFindingForm.size_x_mm;
       const y = this.leFindingForm.size_y_mm;
       const z = this.leFindingForm.size_z_mm;
 
-      if (x && y && z) {
-        // Объём для эллипсоида: V = (4/3) * π * a * b * c
-        // где a, b, c - полуоси (размеры / 2)
-        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
-        this.leFindingForm.volume_mm3 = Math.round(volume);
+            // Рассчитываем max и min даже если введен только один размер
+      if (x || y || z) {
+        // Фильтруем только заполненные значения
+        const sizes = [x, y, z].filter(size => size !== null && size !== undefined && size !== '');
 
-        // Максимальный и минимальный размеры
-        const sizes = [x, y, z];
-        this.leFindingForm.size_max_mm = Math.max(...sizes);
-        this.leFindingForm.size_min_mm = Math.min(...sizes);
+        if (sizes.length > 0) {
+          this.leFindingForm.size_max_mm = Math.max(...sizes);
+          this.leFindingForm.size_min_mm = Math.min(...sizes);
+        } else {
+          this.leFindingForm.size_max_mm = null;
+          this.leFindingForm.size_min_mm = null;
+        }
       } else {
-        // Сбрасываем значения если не все размеры заполнены
-        this.leFindingForm.volume_mm3 = null;
         this.leFindingForm.size_max_mm = null;
         this.leFindingForm.size_min_mm = null;
       }
+
+      if (x && y && z) {
+        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
+        this.leFindingForm.volume_mm3 = Math.round(volume);
+      } else {
+        this.leFindingForm.volume_mm3 = null;
+      }
     },
     calculateRCMetrics() {
-      // Рассчитываем объём, максимальный и минимальный размеры
       const x = this.rcFindingForm.size_x_mm;
       const y = this.rcFindingForm.size_y_mm;
       const z = this.rcFindingForm.size_z_mm;
 
-      if (x && y && z) {
-        // Объём для эллипсоида: V = (4/3) * π * a * b * c
-        // где a, b, c - полуоси (размеры / 2)
-        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
-        this.rcFindingForm.volume_mm3 = Math.round(volume);
+      if (x || y || z) {
+        // Фильтруем только заполненные значения
+        const sizes = [x, y, z].filter(size => size !== null && size !== undefined && size !== '');
 
-        // Максимальный и минимальный размеры
-        const sizes = [x, y, z];
-        this.rcFindingForm.size_max_mm = Math.max(...sizes);
-        this.rcFindingForm.size_min_mm = Math.min(...sizes);
+        if (sizes.length > 0) {
+          this.rcFindingForm.size_max_mm = Math.max(...sizes);
+          this.rcFindingForm.size_min_mm = Math.min(...sizes);
+        } else {
+          this.rcFindingForm.size_max_mm = null;
+          this.rcFindingForm.size_min_mm = null;
+        }
       } else {
-        // Сбрасываем значения если не все размеры заполнены
-        this.rcFindingForm.volume_mm3 = null;
         this.rcFindingForm.size_max_mm = null;
         this.rcFindingForm.size_min_mm = null;
+      }
+
+      if (x && y && z) {
+        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
+        this.rcFindingForm.volume_mm3 = Math.round(volume);
+      } else {
+        this.rcFindingForm.volume_mm3 = null;
       }
     },
 
@@ -519,7 +639,6 @@ export default {
       if (type === 'le') {
         const size = this.leFindingForm.size_x_mm;
         if (size) {
-          // Для округлого образования все размеры одинаковые
           this.leFindingForm.size_y_mm = size;
           this.leFindingForm.size_z_mm = size;
           this.calculateLEMetrics();
@@ -528,7 +647,6 @@ export default {
       if (type === 'rc') {
         const size = this.rcFindingForm.size_x_mm;
         if (size) {
-          // Для округлого образования все размеры одинаковые
           this.rcFindingForm.size_y_mm = size;
           this.rcFindingForm.size_z_mm = size;
           this.calculateRCMetrics();
@@ -537,23 +655,21 @@ export default {
     },
 
     onLEMassShapeChange() {
-      // При изменении формы сбросить размеры для пересчета
-      this.leFindingForm.size_x_mm = null;
-      this.leFindingForm.size_y_mm = null;
-      this.leFindingForm.size_z_mm = null;
-      this.leFindingForm.volume_mm3 = null;
-      this.leFindingForm.size_max_mm = null;
-      this.leFindingForm.size_min_mm = null;
+      this.leFindingForm.size_x_mm = null
+      this.leFindingForm.size_y_mm = null
+      this.leFindingForm.size_z_mm = null
+      this.leFindingForm.volume_mm3 = null
+      this.leFindingForm.size_max_mm = null
+      this.leFindingForm.size_min_mm = null
     },
 
     onRCMassShapeChange() {
-      // При изменении формы сбросить размеры для пересчета
-      this.rcFindingForm.size_x_mm = null;
-      this.rcFindingForm.size_y_mm = null;
-      this.rcFindingForm.size_z_mm = null;
-      this.rcFindingForm.volume_mm3 = null;
-      this.rcFindingForm.size_max_mm = null;
-      this.rcFindingForm.size_min_mm = null;
+      this.rcFindingForm.size_x_mm = null
+      this.rcFindingForm.size_y_mm = null
+      this.rcFindingForm.size_z_mm = null
+      this.rcFindingForm.volume_mm3 = null
+      this.rcFindingForm.size_max_mm = null
+      this.rcFindingForm.size_min_mm = null
     },
 
     async loadFindings() {
@@ -586,7 +702,6 @@ export default {
       this.editingLEFindingId = finding.id;
       this.leFindingForm = { ...finding };
 
-      // Пересчитать метрики если это объемное образование
       if (this.leFindingForm.finding_type === 'Объемное образование' &&
           this.leFindingForm.size_x_mm &&
           this.leFindingForm.size_y_mm &&
@@ -601,8 +716,7 @@ export default {
       this.editingRCFindingId = finding.id;
       this.rcFindingForm = { ...finding };
 
-      // Пересчитать метрики если это объемное образование
-      if (this.rcFindingForm.finding_type === 'Объемное образование' &&
+      if (this.rcFindingForm.finding_type === 'Образование' &&
           this.rcFindingForm.size_x_mm &&
           this.rcFindingForm.size_y_mm &&
           this.rcFindingForm.size_z_mm) {

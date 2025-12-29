@@ -555,6 +555,78 @@ def delete_histology_biopsy(item_id: int, db: Session = Depends(database.get_db)
     db.commit()
     return {"message": "Record deleted"}
 
+
+@app.get("/histology-biopsy-findings/{histology_biopsy_id}", response_model=List[schemas.HistologyBiopsyFinding])
+def get_histology_biopsy_findings(histology_biopsy_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.HistologyBiopsyFinding).filter(
+        database.HistologyBiopsyFinding.histology_biopsy_id == histology_biopsy_id
+    ).all()
+
+@app.post("/histology-biopsy-findings/", response_model=schemas.HistologyBiopsyFinding)
+def create_histology_biopsy_finding(finding: schemas.HistologyBiopsyFindingCreate, db: Session = Depends(database.get_db)):
+    # Получаем следующий доступный номер
+    next_number = get_next_finding_number(
+        db, database.HistologyBiopsyFinding, "histology_biopsy_id", finding.histology_biopsy_id
+    )
+
+    # Создаем словарь данных и добавляем автоматический номер
+    finding_data = finding.dict()
+    finding_data['finding_number'] = next_number
+
+    db_finding = database.HistologyBiopsyFinding(**finding_data)
+    db.add(db_finding)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.put("/histology-biopsy-findings/{finding_id}", response_model=schemas.HistologyBiopsyFinding)
+def update_histology_biopsy_finding(finding_id: int, finding: schemas.HistologyBiopsyFindingCreate, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.HistologyBiopsyFinding).filter(database.HistologyBiopsyFinding.id == finding_id).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    # Сохраняем старое mammography_id для проверки
+    old_histology_biopsy_id = db_finding.histology_biopsy_id
+    new_histology_biopsy_id = finding.histology_biopsy_id
+
+    # Обновляем все поля
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+
+    # Если изменилось mammography_id, нужно получить новый номер
+    if old_histology_biopsy_id != new_histology_biopsy_id:
+        next_number = get_next_finding_number(
+            db, database.HistologyBiopsyFinding, "histology_biopsy_id", new_histology_biopsy_id
+        )
+        db_finding.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.delete("/histology-biopsy-findings/{finding_id}")
+def delete_histology_biopsy_finding(finding_id: int, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.HistologyBiopsyFinding).filter(database.HistologyBiopsyFinding.id == finding_id).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    # Сохраняем mammography_id для перенумерации
+    histology_biopsy_id = db_finding.histology_biopsy_id
+
+    # Удаляем находку
+    db.delete(db_finding)
+    db.commit()
+
+    # Перенумеровываем оставшиеся находки
+    renumber_findings(
+        db, database.HistologyBiopsyFinding, "histology_biopsy_id", histology_biopsy_id
+    )
+
+    return {"message": "Finding deleted and numbers reordered"}
+
+
 # ==================== CYTOLOGY BIOPSY ENDPOINTS ====================
 @app.post("/cytology-biopsies/", response_model=schemas.CytologyBiopsy)
 def create_cytology_biopsy(item: schemas.CytologyBiopsyCreate, db: Session = Depends(database.get_db)):
@@ -590,6 +662,77 @@ def delete_cytology_biopsy(item_id: int, db: Session = Depends(database.get_db))
     db.delete(item)
     db.commit()
     return {"message": "Record deleted"}
+
+
+@app.get("/cytology-biopsy-findings/{cytology_biopsy_id}", response_model=List[schemas.CytologyBiopsyFinding])
+def get_cytology_biopsy_findings(cytology_biopsy_id: int, db: Session = Depends(database.get_db)):
+    return db.query(database.CytologyBiopsyFinding).filter(
+        database.CytologyBiopsyFinding.cytology_biopsy_id == cytology_biopsy_id
+    ).all()
+
+@app.post("/cytology-biopsy-findings/", response_model=schemas.CytologyBiopsyFinding)
+def create_cytology_biopsy_finding(finding: schemas.CytologyBiopsyFindingCreate, db: Session = Depends(database.get_db)):
+    # Получаем следующий доступный номер
+    next_number = get_next_finding_number(
+        db, database.CytologyBiopsyFinding, "cytology_biopsy_id", finding.cytology_biopsy_id
+    )
+
+    # Создаем словарь данных и добавляем автоматический номер
+    finding_data = finding.dict()
+    finding_data['finding_number'] = next_number
+
+    db_finding = database.CytologyBiopsyFinding(**finding_data)
+    db.add(db_finding)
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.put("/cytology-biopsy-findings/{finding_id}", response_model=schemas.CytologyBiopsyFinding)
+def update_cytology_biopsy_finding(finding_id: int, finding: schemas.CytologyBiopsyFindingCreate, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.CytologyBiopsyFinding).filter(database.CytologyBiopsyFinding.id == finding_id).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    # Сохраняем старое mammography_id для проверки
+    old_cytology_biopsy_id = db_finding.cytology_biopsy_id
+    new_cytology_biopsy_id = finding.cytology_biopsy_id
+
+    # Обновляем все поля
+    for key, value in finding.dict().items():
+        setattr(db_finding, key, value)
+
+    # Если изменилось cytology_id, нужно получить новый номер
+    if old_cytology_biopsy_id != new_cytology_biopsy_id:
+        next_number = get_next_finding_number(
+            db, database.CytologyBiopsyFinding, "cytology_biopsy_id", new_cytology_biopsy_id
+        )
+        db_finding.finding_number = next_number
+
+    db.commit()
+    db.refresh(db_finding)
+    return db_finding
+
+
+@app.delete("/cytology-biopsy-findings/{finding_id}")
+def delete_cytology_biopsy_finding(finding_id: int, db: Session = Depends(database.get_db)):
+    db_finding = db.query(database.CytologyBiopsyFinding).filter(database.CytologyBiopsyFinding.id == finding_id).first()
+    if not db_finding:
+        raise HTTPException(status_code=404, detail="Finding not found")
+
+    # Сохраняем cytology_id для перенумерации
+    cytology_biopsy_id = db_finding.cytology_biopsy_id
+
+    # Удаляем находку
+    db.delete(db_finding)
+    db.commit()
+
+    # Перенумеровываем оставшиеся находки
+    renumber_findings(
+        db, database.CytologyBiopsyFinding, "cytology_biopsy_id", cytology_biopsy_id
+    )
+
+    return {"message": "Finding deleted and numbers reordered"}
 
 # ==================== HISTOLOGY POSTOP ENDPOINTS ====================
 @app.post("/histology-postops/", response_model=schemas.HistologyPostop)

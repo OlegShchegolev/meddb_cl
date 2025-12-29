@@ -73,7 +73,6 @@
             <input
               v-model="form.last_name"
               @input="form.last_name = form.last_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
-              required
               class="input"
             >
           </div>
@@ -82,7 +81,6 @@
             <input
               v-model="form.first_name"
               @input="form.first_name = form.first_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
-              required
               class="input"
             >
           </div>
@@ -91,7 +89,6 @@
             <input
               v-model="form.middle_name"
               @input="form.middle_name = form.middle_name.replace(/[^А-Яа-яЁё\s-]/g, '')"
-              required
               class="input"
             >
           </div>

@@ -46,6 +46,7 @@ class Patient(PatientBase):
 # Mammography Finding Schemas
 class MammographyFindingBase(BaseModel):
     finding_number: Optional[int] = None
+    affected_side: Optional[str] = None
     quadrant_location: Optional[str] = None
     depth_location: Optional[str] = None
     finding_type: Optional[str] = None
@@ -63,6 +64,9 @@ class MammographyFindingBase(BaseModel):
     volume_mm3: Optional[int] = None
     size_max_mm: Optional[int] = None
     size_min_mm: Optional[int] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
+    comment: Optional[str] = None
 
 
 class MammographyFindingCreate(MammographyFindingBase):
@@ -81,12 +85,11 @@ class MammographyFinding(MammographyFindingBase):
 class MammographyBase(BaseModel):
     exam_date: date
     study_stage: Optional[int] = None
-    affected_side: Optional[str] = None
-    birads_category: Optional[str] = None
-    acr_density: Optional[str] = None
-    comparison_available: Optional[bool] = False
-    dynamics: Optional[str] = None
-    comment: Optional[str] = None
+    menstrual_cycle_day: Optional[str] = None
+    birads_category_left: Optional[str] = None
+    birads_category_right: Optional[str] = None
+    acr_density_left: Optional[str] = None
+    acr_density_right: Optional[str] = None
 
 
 class MammographyCreate(MammographyBase):
@@ -119,6 +122,7 @@ class ContrastMammographyLEFindingBase(BaseModel):
     calcification_malignancy: Optional[str] = None
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
+    contrast_type: Optional[str] = None
     associated_features: Optional[str] = None
     size_x_mm: Optional[int] = None
     size_y_mm: Optional[int] = None
@@ -130,6 +134,9 @@ class ContrastMammographyLEFindingBase(BaseModel):
     rc_internal_enhancement: Optional[str] = None
     rc_enhancement_degree: Optional[str] = None
     rc_enhancement_intensity: Optional[str] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
+    # comment: Optional[str] = None
 
 
 class ContrastMammographyLEFindingCreate(ContrastMammographyLEFindingBase):
@@ -163,6 +170,9 @@ class ContrastMammographyRCFindingBase(BaseModel):
     size_max_mm: Optional[int] = None
     size_min_mm: Optional[int] = None
     enhancement_intensity: Optional[str] = None
+    comparison_available: Optional[bool] = False
+    dynamics: Optional[str] = None
+    # comment: Optional[str] = None
 
 
 class ContrastMammographyRCFindingCreate(ContrastMammographyRCFindingBase):
@@ -181,14 +191,13 @@ class ContrastMammographyRCFinding(ContrastMammographyRCFindingBase):
 class ContrastMammographyBase(BaseModel):
     exam_date: date
     study_stage: Optional[int] = None
-    affected_side: Optional[str] = None
-    birads_category: Optional[str] = None
-    acr_density: Optional[str] = None
+    menstrual_cycle_day: Optional[str] = None
+    birads_category_left: Optional[str] = None
+    birads_category_right: Optional[str] = None
+    acr_density_left: Optional[str] = None
+    acr_density_right: Optional[str] = None
     bpe_level: Optional[str] = None
     bpe_symmetry: Optional[str] = None
-    comparison_available: Optional[bool] = False
-    dynamics: Optional[str] = None
-    comment: Optional[str] = None
 
 
 class ContrastMammographyCreate(ContrastMammographyBase):
@@ -225,6 +234,8 @@ class UltrasoundFindingBase(BaseModel):
     size_y_mm: Optional[int] = None
     size_z_mm: Optional[int] = None
     volume_mm3: Optional[int] = None
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
     associated_feature_type: Optional[str] = None
 
 
@@ -275,7 +286,7 @@ class UltrasoundLymphNode(UltrasoundLymphNodeBase):
 class UltrasoundBase(BaseModel):
     exam_date: date
     study_stage: Optional[int] = None
-    menstrual_cycle_day: Optional[int] = None
+    menstrual_cycle_day: Optional[str] = None
     patient_position: Optional[str] = None
     birads_right: Optional[str] = None
     birads_left: Optional[str] = None
@@ -313,6 +324,8 @@ class MRTFindingBase(BaseModel):
     size_y_mm: Optional[int] = None
     size_z_mm: Optional[int] = None
     volume_mm3: Optional[int] = None
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
     t2_signal: Optional[str] = None
     enhancement_characteristics: Optional[str] = None
     kinetics: Optional[str] = None
@@ -369,7 +382,7 @@ class MRTLymphNode(MRTLymphNodeBase):
 class MRTBase(BaseModel):
     exam_date: date
     study_stage: Optional[int] = None
-    menstrual_cycle_day: Optional[int] = None
+    menstrual_cycle_day: Optional[str] = None
     birads_right: Optional[str] = None
     birads_left: Optional[str] = None
     acr_density_right: Optional[str] = None
@@ -395,12 +408,54 @@ class MRT(MRTBase):
         from_attributes = True
 
 
-# Histology Biopsy Schemas
+# Histology Biopsy Finding Schemas
+class HistologyBiopsyFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    affected_side: Optional[str] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    classification_group: Optional[str] = None
+    classification_type: Optional[str] = None
+    malignancy_degree: Optional[str] = None
+
+
+class HistologyBiopsyFindingCreate(HistologyBiopsyFindingBase):
+    histology_biopsy_id: int  # Note: это должно быть histology_biopsy_id в базе, но в модели указано cytology_id
+
+
+class HistologyBiopsyFinding(HistologyBiopsyFindingBase):
+    id: int
+    histology_biopsy_id: int  # Note: это должно быть histology_biopsy_id
+
+    class Config:
+        from_attributes = True
+
+
+# Cytology Biopsy Finding Schemas
+class CytologyBiopsyFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    affected_side: Optional[str] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    diagnostic_category: Optional[str] = None
+    cytology_report: Optional[str] = None
+
+
+class CytologyBiopsyFindingCreate(CytologyBiopsyFindingBase):
+    cytology_biopsy_id: int
+
+
+class CytologyBiopsyFinding(CytologyBiopsyFindingBase):
+    id: int
+    cytology_biopsy_id: int
+
+    class Config:
+        from_attributes = True
+
+
+# Histology Biopsy Schemas (ОБНОВЛЕННЫЕ)
 class HistologyBiopsyBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
-    ihc_results: Optional[str] = None
-    comment: Optional[str] = None
 
 
 class HistologyBiopsyCreate(HistologyBiopsyBase):
@@ -410,16 +465,15 @@ class HistologyBiopsyCreate(HistologyBiopsyBase):
 class HistologyBiopsy(HistologyBiopsyBase):
     id: int
     patient_id: str
+    findings: List[HistologyBiopsyFinding] = []
 
     class Config:
         from_attributes = True
 
 
-# Cytology Biopsy Schemas
+# Cytology Biopsy Schemas (ОБНОВЛЕННЫЕ)
 class CytologyBiopsyBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
-    comment: Optional[str] = None
 
 
 class CytologyBiopsyCreate(CytologyBiopsyBase):
@@ -429,6 +483,7 @@ class CytologyBiopsyCreate(CytologyBiopsyBase):
 class CytologyBiopsy(CytologyBiopsyBase):
     id: int
     patient_id: str
+    findings: List[CytologyBiopsyFinding] = []
 
     class Config:
         from_attributes = True

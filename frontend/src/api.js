@@ -170,6 +170,9 @@ export default {
   getHistologyBiopsies(params = {}) {
     return api.get('/histology-biopsies/', { params })
   },
+  getHistologyBiopsy(id) {
+    return api.get(`/histology-biopsies/${id}`)
+  },
   createHistologyBiopsy(data) {
     return api.post('/histology-biopsies/', data)
   },
@@ -179,6 +182,21 @@ export default {
   deleteHistologyBiopsy(id) {
     return api.delete(`/histology-biopsies/${id}`)
   },
+
+  // Histology Biopsy Findings
+  createHistologyBiopsyFinding(data) {
+    return api.post('/histology-biopsy-findings/', data)
+  },
+  getHistologyBiopsyFindings(hbId) {
+    return api.get(`/histology-biopsy-findings/${hbId}`)
+  },
+  updateHistologyBiopsyFinding(id, data) {
+    return api.put(`/histology-biopsy-findings/${id}`, data)
+  },
+  deleteHistologyBiopsyFinding(id) {
+    return api.delete(`/histology-biopsy-findings/${id}`)
+  },
+
 
   // Cytology Biopsies
   getCytologyBiopsies(params = {}) {
@@ -192,6 +210,20 @@ export default {
   },
   deleteCytologyBiopsy(id) {
     return api.delete(`/cytology-biopsies/${id}`)
+  },
+
+    // Histology Biopsy Findings
+  createCytologyBiopsyFinding(data) {
+    return api.post('/cytology-biopsy-findings/', data)
+  },
+  getCytologyBiopsyFindings(hbId) {
+    return api.get(`/cytology-biopsy-findings/${hbId}`)
+  },
+  updateCytologyBiopsyFinding(id, data) {
+    return api.put(`/cytology-biopsy-findings/${id}`, data)
+  },
+  deleteCytologyBiopsyFinding(id) {
+    return api.delete(`/cytology-biopsy-findings/${id}`)
   },
 
   // Histology Postops

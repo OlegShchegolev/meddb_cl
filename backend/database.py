@@ -23,7 +23,7 @@ class Patient(Base):
     date_of_birth = Column(Date, nullable=False)
     diagnosis = Column(Text)
     tnm_stage = Column(String(100))
-    mkb_code = Column(String(100))
+    mkb_code = Column(Text)
     comment = Column(Text)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -43,12 +43,11 @@ class Mammography(Base):
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
     study_stage = Column(Integer)
-    affected_side = Column(String(50))
-    birads_category = Column(String(10))
-    acr_density = Column(String(10))
-    comparison_available = Column(Boolean, default=False)
-    dynamics = Column(String(100))
-    comment = Column(Text)
+    menstrual_cycle_day = Column(String(50))  # День менструального цикла
+    birads_category_left = Column(String(10))
+    birads_category_right = Column(String(10))
+    acr_density_left = Column(String(10))
+    acr_density_right = Column(String(10))
 
     patient = relationship("Patient", back_populates="mammographies")
     findings = relationship("MammographyFinding", back_populates="mammography", cascade="all, delete-orphan")
@@ -60,6 +59,7 @@ class MammographyFinding(Base):
     id = Column(Integer, primary_key=True, index=True)
     mammography_id = Column(Integer, ForeignKey("mammographies.id"), nullable=False)
     finding_number = Column(Integer, nullable=True)
+    affected_side = Column(String(50))
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
     finding_type = Column(String(100))
@@ -83,6 +83,10 @@ class MammographyFinding(Base):
     size_max_mm = Column(Integer)
     size_min_mm = Column(Integer)
 
+    comparison_available = Column(Boolean, default=False)
+    dynamics = Column(String(100))
+    comment = Column(Text)
+
     mammography = relationship("Mammography", back_populates="findings")
 
 
@@ -93,14 +97,13 @@ class ContrastMammography(Base):
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
     study_stage = Column(Integer)
-    affected_side = Column(String(50))
-    birads_category = Column(String(10))
-    acr_density = Column(String(10))
+    menstrual_cycle_day = Column(String(50))  # День менструального цикла
+    birads_category_left = Column(String(10))
+    birads_category_right = Column(String(10))
+    acr_density_left = Column(String(10))
+    acr_density_right = Column(String(10))
     bpe_level = Column(String(50))
     bpe_symmetry = Column(String(50))
-    comparison_available = Column(Boolean, default=False)
-    dynamics = Column(String(100))
-    comment = Column(Text)
 
     patient = relationship("Patient", back_populates="contrast_mammographies")
     le_findings = relationship("ContrastMammographyLEFinding", back_populates="contrast_mammo",
@@ -129,6 +132,8 @@ class ContrastMammographyLEFinding(Base):
     calcification_morphology = Column(String(100))
     calcification_distribution = Column(String(50))
 
+    contrast_type = Column(String(50))
+
     associated_features = Column(Text)
 
     size_x_mm = Column(Integer)
@@ -142,6 +147,8 @@ class ContrastMammographyLEFinding(Base):
     rc_internal_enhancement = Column(String(50))
     rc_enhancement_degree = Column(String(50))
     rc_enhancement_intensity = Column(String(50))
+    comparison_available = Column(Boolean, default=False)
+    dynamics = Column(Text)
 
     contrast_mammo = relationship("ContrastMammography", back_populates="le_findings")
 
@@ -172,6 +179,8 @@ class ContrastMammographyRCFinding(Base):
     size_max_mm = Column(Integer)
     size_min_mm = Column(Integer)
     enhancement_intensity = Column(String(50))
+    comparison_available = Column(Boolean, default=False)
+    dynamics = Column(Text)
 
     contrast_mammo = relationship("ContrastMammography", back_populates="rc_findings")
 
@@ -183,7 +192,7 @@ class Ultrasound(Base):
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
     study_stage = Column(Integer)  # Этап исследования
-    menstrual_cycle_day = Column(Integer)  # День менструального цикла
+    menstrual_cycle_day = Column(String(50))  # День менструального цикла
     patient_position = Column(String(50))  # Положение пациента
     birads_right = Column(String(10))  # BI-RADS справа
     birads_left = Column(String(10))  # BI-RADS слева
@@ -228,6 +237,8 @@ class UltrasoundFinding(Base):
     size_y_mm = Column(Integer)
     size_z_mm = Column(Integer)
     volume_mm3 = Column(Integer)
+    size_max_mm = Column(Integer)
+    size_min_mm = Column(Integer)
 
     # Для сопутствующих признаков
     associated_feature_type = Column(String(100))  # Втяжение/утолщение/отек кожи, Втяжение соска и т.д.
@@ -279,7 +290,7 @@ class MRT(Base):
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
     study_stage = Column(Integer)
-    menstrual_cycle_day = Column(Integer)
+    menstrual_cycle_day = Column(String(50))
     birads_right = Column(String(10))
     birads_left = Column(String(10))
     acr_density_right = Column(String(10))
@@ -319,6 +330,8 @@ class MRTFinding(Base):
     size_y_mm = Column(Integer)
     size_z_mm = Column(Integer)
     volume_mm3 = Column(Integer)
+    size_max_mm = Column(Integer)
+    size_min_mm = Column(Integer)
 
     # Характеристики
     t2_signal = Column(String(50))  # Гиперинтенсивный, негиперинтенсивный, Изоинтенсивный
@@ -373,11 +386,24 @@ class HistologyBiopsy(Base):
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
-    findings = Column(Text)
-    ihc_results = Column(Text)
-    comment = Column(Text)
 
     patient = relationship("Patient", back_populates="histology_biopsies")
+    findings = relationship("HistologyBiopsyFinding", back_populates="histology_biopsy", cascade="all, delete-orphan")
+
+
+class HistologyBiopsyFinding(Base):
+    __tablename__ = "histology_biopsy_findings"
+    id = Column(Integer, primary_key=True, index=True)
+    histology_biopsy_id = Column(Integer, ForeignKey("histology_biopsies.id"), nullable=False)
+    finding_number = Column(Integer, nullable=True)
+    affected_side = Column(String(50))
+    quadrant_location = Column(String(50))
+    depth_location = Column(String(50))
+    classification_group = Column(Text)
+    classification_type = Column(Text)
+    malignancy_degree = Column(Text)
+
+    histology_biopsy = relationship("HistologyBiopsy", back_populates="findings")
 
 
 class CytologyBiopsy(Base):
@@ -386,10 +412,23 @@ class CytologyBiopsy(Base):
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
-    findings = Column(Text)
-    comment = Column(Text)
 
     patient = relationship("Patient", back_populates="cytology_biopsies")
+    findings = relationship("CytologyBiopsyFinding", back_populates="cytology_biopsy", cascade="all, delete-orphan")
+
+
+class CytologyBiopsyFinding(Base):
+    __tablename__ = "cytology_biopsy_findings"
+    id = Column(Integer, primary_key=True, index=True)
+    cytology_biopsy_id = Column(Integer, ForeignKey("cytology_biopsies.id"), nullable=False)
+    finding_number = Column(Integer, nullable=True)
+    affected_side = Column(String(50))
+    quadrant_location = Column(String(50))
+    depth_location = Column(String(50))
+    diagnostic_category = Column(String(50))
+    cytology_report = Column(String(100))
+
+    cytology_biopsy = relationship("CytologyBiopsy", back_populates="findings")
 
 
 class HistologyPostop(Base):

@@ -245,6 +245,10 @@
               <div v-if="findingForm.volume_mm3" class="calculated-metrics">
                 <div><strong>Объём:</strong> {{ findingForm.volume_mm3 }} мм³</div>
               </div>
+              <div v-if="findingForm.size_max_mm && findingForm.size_min_mm" class="calculated-metrics">
+                <div><strong>Макс. размер:</strong> {{ findingForm.size_max_mm }} мм</div>
+                <div><strong>Мин. размер:</strong> {{ findingForm.size_min_mm }} мм</div>
+              </div>
             </div>
 
             <!-- Для сопутствующих признаков -->
@@ -553,6 +557,8 @@ export default {
         size_y_mm: null,
         size_z_mm: null,
         volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null,
         associated_feature_type: ''
       }
     },
@@ -580,11 +586,35 @@ export default {
       const y = this.findingForm.size_y_mm
       const z = this.findingForm.size_z_mm
 
-      if (x && y && z) {
-        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2)
-        this.findingForm.volume_mm3 = Math.round(volume)
+      if (x || y || z) {
+        // Фильтруем только заполненные значения
+        const sizes = [x, y, z].filter(size => size !== null && size !== undefined && size !== '');
+
+        if (sizes.length > 0) {
+          this.findingForm.size_max_mm = Math.max(...sizes);
+          this.findingForm.size_min_mm = Math.min(...sizes);
+        } else {
+          this.findingForm.size_max_mm = null;
+          this.findingForm.size_min_mm = null;
+        }
       } else {
-        this.findingForm.volume_mm3 = null
+        this.findingForm.size_max_mm = null;
+        this.findingForm.size_min_mm = null;
+      }
+
+      if (x && y && z) {
+        // Объём для эллипсоида: V = (4/3) * π * a * b * c
+        // где a, b, c - полуоси (размеры / 2)
+        const volume = (4 / 3) * Math.PI * (x / 2) * (y / 2) * (z / 2);
+        this.findingForm.volume_mm3 = Math.round(volume);
+
+        // Прокрутить к рассчитанным метрикам
+        this.$nextTick(() => {
+          this.scrollToFormBottom();
+        });
+      } else {
+        // Сбрасываем значения если не все размеры заполнены
+        this.findingForm.volume_mm3 = null;
       }
     },
     onFindingTypeChange() {
