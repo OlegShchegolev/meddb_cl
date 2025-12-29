@@ -16,17 +16,14 @@
           <thead>
             <tr>
               <th>№</th>
-              <th>Локализация</th>
-              <th>Глубина</th>
-              <th>Тип</th>
+              <th>Орган</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="finding in findings" :key="finding.id">
               <td>{{ finding.finding_number }}</td>
-              <td>{{ finding.quadrant_location }}</td>
-              <td>{{ finding.depth_location }}</td>
+              <td>{{ finding.cytology_body_part }}</td>
               <td>{{ finding.finding_type }}</td>
               <td>
                 <button @click="editFinding(finding)" class="btn-sm btn-warning">Изменить</button>
@@ -46,15 +43,31 @@
           <form @submit.prevent="saveFinding">
             <div class="form-row">
               <div class="form-group">
+                <label>Сторона *</label>
+                <select v-model="findingForm.affected_side" required class="input">
+                  <option value="">Выберите</option>
+                  <option value="Левая МЖ">Левая МЖ</option>
+                  <option value="Правая МЖ">Правая МЖ</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Орган *</label>
+                <select v-model="findingForm.cytology_body_part" required class="input">
+                  <option value="">Выберите</option>
+                  <option value="Молочная железа">Молочная железа</option>
+                  <option value="Лимфатический узел">Лимфатический узел</option>
+                </select>
+              </div>
+            </div>
+
+            <div v-if="findingForm.cytology_body_part === 'Молочная железа'" class="form-row">
+              <div class="form-group">
                 <label>Локализация по квадрантам *</label>
                 <select v-model="findingForm.quadrant_location" required class="input">
                   <option value="">Выберите</option>
                   <option v-for="loc in quadrantLocations" :key="loc" :value="loc">{{ loc }}</option>
                 </select>
               </div>
-            </div>
-
-            <div class="form-row">
               <div class="form-group">
                 <label>Локализация по глубине МЖ *</label>
                 <select v-model="findingForm.depth_location" required class="input">
@@ -62,6 +75,16 @@
                   <option v-for="depth in depthLocations" :key="depth" :value="depth">{{ depth }}</option>
                 </select>
               </div>
+            </div>
+            <div v-if="findingForm.cytology_body_part === 'Лимфатический узел'" class="form-row">
+              <label>Группа ЛУ *</label>
+                <select v-model="findingForm.lymph_node_group" required class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="loc in lymphNodeGroups" :key="loc" :value="loc">{{ loc }}</option>
+                </select>
+            </div>
+
+            <div class="form-row">
               <!-- Диагностическая категория, по классификации The IAC Yokohama System For RBC. -->
               <div class="form-group">
                 <label>Диагностическая категория, по классификации The IAC Yokohama System For RBC. *</label>
@@ -74,9 +97,6 @@
                   <option value="С5 — злокачественное новообразование.">С5 — злокачественное новообразование.</option>
                 </select>
               </div>
-            </div>
-
-            <div class="form-row">
               <!-- Заключение по цитологии -->
               <div class="form-group">
                 <label>Заключение по цитологии</label>
@@ -119,14 +139,17 @@ export default {
       findingForm: {
         finding_number: null,
         affected_side: '',
+        cytology_body_part: '',
         quadrant_location: '',
         depth_location: '',
+        lymph_node_group: '',
         diagnostic_category: '',
         cytology_report: '',
       },
       // Справочники
       quadrantLocations: dict.QUADRANT_LOCATIONS,
       depthLocations: dict.DEPTH_LOCATIONS,
+      lymphNodeGroups: dict.LYMPH_NODE_GROUPS
     }
   },
   mounted() {
@@ -212,8 +235,10 @@ export default {
       this.findingForm = {
         finding_number: null,
         affected_side: '',
+        cytology_body_part: '',
         quadrant_location: '',
         depth_location: '',
+        lymph_node_group: '',
         diagnostic_category: '',
         cytology_report: '',
       }

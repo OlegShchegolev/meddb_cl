@@ -2,7 +2,17 @@
   <div class="patients">
     <div class="header">
       <h2>Пациенты</h2>
-      <button @click="showAddModal = true" class="btn btn-primary">Добавить пациента</button>
+      <div class="header-actions">
+        <button @click="exportLymphNodesReport" class="btn btn-success" :disabled="exporting">
+          <span v-if="!exporting">📊 Экспорт отчёта по ЛУ</span>
+          <span v-else>⏳ Экспорт...</span>
+        </button>
+        <button @click="exportFormationsReport" class="btn btn-info" :disabled="exporting">
+          <span v-if="!exporting">📋 Экспорт отчёта по образованиям</span>
+          <span v-else>⏳ Экспорт...</span>
+        </button>
+        <button @click="showAddModal = true" class="btn btn-primary">Добавить пациента</button>
+      </div>
     </div>
 
     <div class="filters">
@@ -140,6 +150,7 @@
 
 <script>
 import api from '../api'
+import * as XLSX from 'xlsx'
 
 export default {
   data() {
@@ -162,13 +173,14 @@ export default {
         date_of_birth: '',
         diagnosis: '',
         tnm_stage: '',
+        mkb_code: '',
         comment: ''
       },
-      // Переменные для валидации СНИЛС
       snilsValid: true,
       snilsTouched: false,
-      maxDate: new Date().toISOString().split('T')[0], // Сегодняшняя дата,
+      maxDate: new Date().toISOString().split('T')[0],
       minDate: '1900-01-01',
+      exporting: false
     }
   },
   mounted() {
@@ -193,11 +205,9 @@ export default {
     editPatient(patient) {
       this.editingPatient = patient.id
       this.form = {...patient}
-      // При редактировании устанавливаем состояние валидации для СНИЛС
       this.validateSnils()
     },
     async savePatient() {
-      // Проверяем валидность СНИЛС перед сохранением
       const validation = this.validateSnils()
       if (!validation.isValid) {
         this.snilsTouched = true
@@ -206,10 +216,9 @@ export default {
       }
 
       try {
-        // Отправляем чистое значение (без форматирования) на сервер
         const dataToSend = {
           ...this.form,
-          snils: validation.clean // Отправляем чистое значение
+          snils: validation.clean
         }
 
         if (this.editingPatient) {
@@ -246,9 +255,9 @@ export default {
         date_of_birth: '',
         diagnosis: '',
         tnm_stage: '',
+        mkb_code: '',
         comment: ''
       }
-      // Сбрасываем состояние валидации
       this.snilsValid = true
       this.snilsTouched = false
     },
@@ -258,14 +267,9 @@ export default {
     },
     formatSnils(event) {
       this.snilsTouched = true;
-
-      // Получаем значение без форматирования
       let value = event.target.value.replace(/\D/g, '');
-
-      // Ограничиваем до 11 цифр
       value = value.substring(0, 11);
 
-      // Добавляем форматирование
       let formatted = '';
       for (let i = 0; i < value.length; i++) {
         if (i === 3 || i === 6) {
@@ -276,17 +280,11 @@ export default {
         formatted += value[i];
       }
 
-      // Обновляем модель
       this.form.snils = formatted;
-
-      // Валидация
       this.validateSnils();
     },
     validateSnils() {
-      // Убираем форматирование для проверки
       const cleanValue = this.form.snils.replace(/\D/g, '');
-
-      // Проверяем, что ровно 11 цифр и все цифры
       this.snilsValid = /^\d{11}$/.test(cleanValue);
 
       return {
@@ -295,9 +293,845 @@ export default {
         isValid: this.snilsValid
       };
     },
-    // Метод для получения чистого значения (без форматирования)
     getCleanSnils() {
       return this.form.snils.replace(/\D/g, '');
+    },
+
+    async exportLymphNodesReport() {
+      this.exporting = true;
+      try {
+        // Загружаем всех пациентов без фильтров
+        const response = await api.getPatients({});
+        const allPatients = response.data;
+
+        if (allPatients.length === 0) {
+          alert('Нет данных для экспорта');
+          return;
+        }
+
+        // Собираем данные для всех пациентов
+        const reportData = [];
+
+        for (const patient of allPatients) {
+          try {
+            // Загружаем детальные данные пациента
+            const detailResponse = await api.getPatient(patient.id);
+            const patientData = detailResponse.data;
+
+            // Обрабатываем УЗИ лимфоузлы
+            if (patientData.ultrasounds && patientData.ultrasounds.length > 0) {
+              patientData.ultrasounds.forEach((ultrasound, stageIdx) => {
+                if (ultrasound.lymph_nodes && ultrasound.lymph_nodes.length > 0) {
+                  ultrasound.lymph_nodes.forEach((ln, lnIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: lnIdx + 1,
+                      side: ln.side || '',
+                      lymphNodeGroup: ln.lymph_node_group || '',
+                      uziVolume: this.calculateVolume(ln.size_x_mm, ln.size_y_mm, ln.size_z_mm),
+                      uziMinSize: ln.size_x_mm || '',
+                      uziMaxSize: ln.size_z_mm || '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyVolume: '',
+                      histologyMinSize: '',
+                      histologyMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем МРТ лимфоузлы
+            if (patientData.mrts && patientData.mrts.length > 0) {
+              patientData.mrts.forEach((mrt, stageIdx) => {
+                if (mrt.lymph_nodes && mrt.lymph_nodes.length > 0) {
+                  mrt.lymph_nodes.forEach((ln, lnIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: lnIdx + 1,
+                      side: ln.side || '',
+                      lymphNodeGroup: ln.lymph_node_group || '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      mrtVolume: this.calculateVolumeMRT(ln.size_cortical_mm),
+                      mrtMinSize: ln.size_cortical_mm || '',
+                      mrtMaxSize: ln.size_cortical_mm || '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyVolume: '',
+                      histologyMinSize: '',
+                      histologyMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем Цитологию лимфоузлы
+            if (patientData.cytology_biopsies && patientData.cytology_biopsies.length > 0) {
+              patientData.cytology_biopsies.forEach((cytology, stageIdx) => {
+                if (cytology.findings && cytology.findings.length > 0) {
+                  cytology.findings.forEach((finding, lnIdx) => {
+                    // Проверяем, что это находка ЛУ (lymph_node_group должна быть заполнена)
+                    if (finding.lymph_node_group) {
+                      reportData.push({
+                        patientId: patient.id,
+                        diagnosis: patient.diagnosis || '',
+                        tnmStage: patient.tnm_stage || '',
+                        mkbCode: patient.mkb_code || '',
+                        studyStage: stageIdx + 1,
+                        findingNumber: lnIdx + 1,
+                        side: finding.affected_side || '',
+                        lymphNodeGroup: finding.lymph_node_group || '',
+                        uziVolume: '',
+                        uziMinSize: '',
+                        uziMaxSize: '',
+                        mrtVolume: '',
+                        mrtMinSize: '',
+                        mrtMaxSize: '',
+                        cytologyVolume: 'N/A', // Для цитологии объем обычно не измеряется
+                        cytologyMinSize: 'N/A',
+                        cytologyMaxSize: 'N/A',
+                        histologyVolume: '',
+                        histologyMinSize: '',
+                        histologyMaxSize: ''
+                      });
+                    }
+                  });
+                }
+              });
+            }
+
+          } catch (error) {
+            console.error(`Ошибка загрузки данных пациента ${patient.id}:`, error);
+          }
+        }
+
+        if (reportData.length === 0) {
+          alert('Нет данных о лимфоузлах для экспорта');
+          return;
+        }
+
+        // Создаем workbook
+        const wb = XLSX.utils.book_new();
+
+        // Создаем массив данных с мультииндексом
+        const aoa = [];
+
+        // Первая строка - основные заголовки (объединенные ячейки)
+        const headerRow1 = [
+          'ID Пациента',
+          'Диагноз (клинический)',
+          'Стадия по TNM',
+          'Код МКБ',
+          'Этап исследования',
+          'Номер находки (биоматериала)',
+          'Сторона',
+          'Группа измененных ЛУ',
+          'УЗИ ЛУ', '', '', // 3 колонки для УЗИ
+          'МРТ ЛУ', '', '', // 3 колонки для МРТ
+          'Цитология ЛУ', '', '', // 3 колонки для Цитологии
+          'Гистология послеоперационная ЛУ', '', '' // 3 колонки для Гистологии
+        ];
+
+        // Вторая строка - подзаголовки
+        const headerRow2 = [
+          '', '', '', '', '', '', '', '', // Пустые для основных колонок
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // УЗИ
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // МРТ
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // Цитология
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер'  // Гистология
+        ];
+
+        aoa.push(headerRow1);
+        aoa.push(headerRow2);
+
+        // Добавляем данные
+        reportData.forEach(row => {
+          aoa.push([
+            row.patientId,
+            row.diagnosis,
+            row.tnmStage,
+            row.mkbCode,
+            row.studyStage,
+            row.findingNumber,
+            row.side,
+            row.lymphNodeGroup,
+            row.uziVolume,
+            row.uziMinSize,
+            row.uziMaxSize,
+            row.mrtVolume,
+            row.mrtMinSize,
+            row.mrtMaxSize,
+            row.cytologyVolume,
+            row.cytologyMinSize,
+            row.cytologyMaxSize,
+            row.histologyVolume,
+            row.histologyMinSize,
+            row.histologyMaxSize
+          ]);
+        });
+
+        // Создаем worksheet из массива
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Настраиваем объединение ячеек для мультииндекса
+        const merges = [
+          // Основные колонки (объединяем обе строки)
+          { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, // ID Пациента
+          { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, // Диагноз
+          { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } }, // Стадия по TNM
+          { s: { r: 0, c: 3 }, e: { r: 1, c: 3 } }, // Код МКБ
+          { s: { r: 0, c: 4 }, e: { r: 1, c: 4 } }, // Этап исследования
+          { s: { r: 0, c: 5 }, e: { r: 1, c: 5 } }, // Номер находки
+          { s: { r: 0, c: 6 }, e: { r: 1, c: 6 } }, // Сторона
+          { s: { r: 0, c: 7 }, e: { r: 1, c: 7 } }, // Группа ЛУ
+
+          // Объединяем заголовки для групп колонок
+          { s: { r: 0, c: 8 }, e: { r: 0, c: 10 } },  // УЗИ ЛУ
+          { s: { r: 0, c: 11 }, e: { r: 0, c: 13 } }, // МРТ ЛУ
+          { s: { r: 0, c: 14 }, e: { r: 0, c: 16 } }, // Цитология ЛУ
+          { s: { r: 0, c: 17 }, e: { r: 0, c: 19 } }  // Гистология
+        ];
+
+        ws['!merges'] = merges;
+
+        // Устанавливаем ширину колонок
+        const colWidths = [
+          { wch: 15 }, // ID Пациента
+          { wch: 30 }, // Диагноз
+          { wch: 15 }, // Стадия по TNM
+          { wch: 15 }, // Код МКБ
+          { wch: 12 }, // Этап исследования
+          { wch: 15 }, // Номер находки
+          { wch: 15 }, // Сторона
+          { wch: 30 }, // Группа ЛУ
+          { wch: 18 }, // УЗИ объем
+          { wch: 18 }, // УЗИ мин
+          { wch: 18 }, // УЗИ макс
+          { wch: 18 }, // МРТ объем
+          { wch: 18 }, // МРТ мин
+          { wch: 18 }, // МРТ макс
+          { wch: 18 }, // Цитология объем
+          { wch: 18 }, // Цитология мин
+          { wch: 18 }, // Цитология макс
+          { wch: 18 }, // Гистология объем
+          { wch: 18 }, // Гистология мин
+          { wch: 18 }  // Гистология макс
+        ];
+        ws['!cols'] = colWidths;
+
+        // Применяем стили к заголовкам (делаем их жирными и с фоном)
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          // Первая строка заголовков
+          const addr1 = XLSX.utils.encode_cell({ r: 0, c: C });
+          if (!ws[addr1]) continue;
+          if (!ws[addr1].s) ws[addr1].s = {};
+          ws[addr1].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "4472C4" } },
+            alignment: { horizontal: "center", vertical: "center" }
+          };
+
+          // Вторая строка заголовков
+          const addr2 = XLSX.utils.encode_cell({ r: 1, c: C });
+          if (!ws[addr2]) continue;
+          if (!ws[addr2].s) ws[addr2].s = {};
+          ws[addr2].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "B4C7E7" } },
+            alignment: { horizontal: "center", vertical: "center" }
+          };
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Отчёт по ЛУ');
+
+        // Сохраняем файл
+        const fileName = `Отчет_по_ЛУ_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+
+        alert(`Экспорт завершён! Выгружено записей: ${reportData.length}`);
+      } catch (error) {
+        console.error('Ошибка экспорта:', error);
+        alert('Ошибка при экспорте данных: ' + error.message);
+      } finally {
+        this.exporting = false;
+      }
+    },
+
+    calculateVolume(x, y, z) {
+      if (!x || !y || !z) return '';
+      // Простая формула объема эллипсоида: (4/3) * π * (x/2) * (y/2) * (z/2)
+      const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2);
+      return Math.round(volume);
+    },
+
+    calculateVolumeMRT(cortical) {
+      if (!cortical) return '';
+      // Для МРТ используем упрощенную формулу
+      return Math.round(cortical * cortical * cortical * 0.5);
+    },
+
+    async exportFormationsReport() {
+      this.exporting = true;
+      try {
+        // Загружаем всех пациентов без фильтров
+        const response = await api.getPatients({});
+        const allPatients = response.data;
+
+        if (allPatients.length === 0) {
+          alert('Нет данных для экспорта');
+          return;
+        }
+
+        // Собираем данные для всех пациентов
+        const reportData = [];
+
+        for (const patient of allPatients) {
+          try {
+            // Загружаем детальные данные пациента
+            const detailResponse = await api.getPatient(patient.id);
+            const patientData = detailResponse.data;
+
+            // Обрабатываем Маммографию
+            if (patientData.mammographies && patientData.mammographies.length > 0) {
+              patientData.mammographies.forEach((mammo, stageIdx) => {
+                if (mammo.findings && mammo.findings.length > 0) {
+                  mammo.findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: finding.affected_side || '',
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: finding.volume_mm3 || this.calculateVolume(finding.size_x_mm, finding.size_y_mm, finding.size_z_mm),
+                      mammoMinSize: finding.size_min_mm || finding.size_x_mm || '',
+                      mammoMaxSize: finding.size_max_mm || finding.size_z_mm || '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      cmVolume: '',
+                      cmMinSize: '',
+                      cmMaxSize: '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      histologyBiopsyVolume: '',
+                      histologyBiopsyMinSize: '',
+                      histologyBiopsyMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем УЗИ МЖ
+            if (patientData.ultrasounds && patientData.ultrasounds.length > 0) {
+              patientData.ultrasounds.forEach((uzi, stageIdx) => {
+                if (uzi.findings && uzi.findings.length > 0) {
+                  uzi.findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: finding.side || '',
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: '',
+                      mammoMinSize: '',
+                      mammoMaxSize: '',
+                      uziVolume: finding.volume_mm3 || this.calculateVolume(finding.size_x_mm, finding.size_y_mm, finding.size_z_mm),
+                      uziMinSize: finding.size_min_mm || finding.size_x_mm || '',
+                      uziMaxSize: finding.size_max_mm || finding.size_z_mm || '',
+                      cmVolume: '',
+                      cmMinSize: '',
+                      cmMaxSize: '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      histologyBiopsyVolume: '',
+                      histologyBiopsyMinSize: '',
+                      histologyBiopsyMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем Контрастную маммографию (КМ)
+            if (patientData.contrast_mammographies && patientData.contrast_mammographies.length > 0) {
+              patientData.contrast_mammographies.forEach((cm, stageIdx) => {
+                // LE findings (Low Energy)
+                if (cm.le_findings && cm.le_findings.length > 0) {
+                  cm.le_findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: 'LE', // Low Energy
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: '',
+                      mammoMinSize: '',
+                      mammoMaxSize: '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      cmVolume: finding.volume_mm3 || this.calculateVolume(finding.size_x_mm, finding.size_y_mm, finding.size_z_mm),
+                      cmMinSize: finding.size_min_mm || finding.size_x_mm || '',
+                      cmMaxSize: finding.size_max_mm || finding.size_z_mm || '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      histologyBiopsyVolume: '',
+                      histologyBiopsyMinSize: '',
+                      histologyBiopsyMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+
+                // RC findings (Recombined/Contrast)
+                if (cm.rc_findings && cm.rc_findings.length > 0) {
+                  cm.rc_findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: 'RC', // Recombined
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: '',
+                      mammoMinSize: '',
+                      mammoMaxSize: '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      cmVolume: finding.volume_mm3 || this.calculateVolume(finding.size_x_mm, finding.size_y_mm, finding.size_z_mm),
+                      cmMinSize: finding.size_min_mm || finding.size_x_mm || '',
+                      cmMaxSize: finding.size_max_mm || finding.size_z_mm || '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      histologyBiopsyVolume: '',
+                      histologyBiopsyMinSize: '',
+                      histologyBiopsyMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем МРТ МЖ
+            if (patientData.mrts && patientData.mrts.length > 0) {
+              patientData.mrts.forEach((mrt, stageIdx) => {
+                if (mrt.findings && mrt.findings.length > 0) {
+                  mrt.findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: finding.side || '',
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: '',
+                      mammoMinSize: '',
+                      mammoMaxSize: '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      cmVolume: '',
+                      cmMinSize: '',
+                      cmMaxSize: '',
+                      mrtVolume: finding.volume_mm3 || this.calculateVolume(finding.size_x_mm, finding.size_y_mm, finding.size_z_mm),
+                      mrtMinSize: finding.size_min_mm || finding.size_x_mm || '',
+                      mrtMaxSize: finding.size_max_mm || finding.size_z_mm || '',
+                      histologyBiopsyVolume: '',
+                      histologyBiopsyMinSize: '',
+                      histologyBiopsyMaxSize: '',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем Гистологию биопсии
+            if (patientData.histology_biopsies && patientData.histology_biopsies.length > 0) {
+              patientData.histology_biopsies.forEach((histology, stageIdx) => {
+                if (histology.findings && histology.findings.length > 0) {
+                  histology.findings.forEach((finding, findingIdx) => {
+                    reportData.push({
+                      patientId: patient.id,
+                      diagnosis: patient.diagnosis || '',
+                      tnmStage: patient.tnm_stage || '',
+                      mkbCode: patient.mkb_code || '',
+                      studyStage: stageIdx + 1,
+                      findingNumber: findingIdx + 1,
+                      side: finding.affected_side || '',
+                      quadrantLocation: finding.quadrant_location || '',
+                      depthLocation: finding.depth_location || '',
+                      mammoVolume: '',
+                      mammoMinSize: '',
+                      mammoMaxSize: '',
+                      uziVolume: '',
+                      uziMinSize: '',
+                      uziMaxSize: '',
+                      cmVolume: '',
+                      cmMinSize: '',
+                      cmMaxSize: '',
+                      mrtVolume: '',
+                      mrtMinSize: '',
+                      mrtMaxSize: '',
+                      histologyBiopsyVolume: 'N/A', // Гистология обычно не содержит размеры
+                      histologyBiopsyMinSize: 'N/A',
+                      histologyBiopsyMaxSize: 'N/A',
+                      cytologyVolume: '',
+                      cytologyMinSize: '',
+                      cytologyMaxSize: '',
+                      histologyPostopVolume: '',
+                      histologyPostopMinSize: '',
+                      histologyPostopMaxSize: ''
+                    });
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем Цитологию
+            if (patientData.cytology_biopsies && patientData.cytology_biopsies.length > 0) {
+              patientData.cytology_biopsies.forEach((cytology, stageIdx) => {
+                if (cytology.findings && cytology.findings.length > 0) {
+                  cytology.findings.forEach((finding, findingIdx) => {
+                    // Проверяем, что это находка молочной железы (не ЛУ)
+                    if (finding.cytology_body_part && finding.cytology_body_part.includes('МЖ')) {
+                      reportData.push({
+                        patientId: patient.id,
+                        diagnosis: patient.diagnosis || '',
+                        tnmStage: patient.tnm_stage || '',
+                        mkbCode: patient.mkb_code || '',
+                        studyStage: stageIdx + 1,
+                        findingNumber: findingIdx + 1,
+                        side: finding.affected_side || '',
+                        quadrantLocation: finding.quadrant_location || '',
+                        depthLocation: finding.depth_location || '',
+                        mammoVolume: '',
+                        mammoMinSize: '',
+                        mammoMaxSize: '',
+                        uziVolume: '',
+                        uziMinSize: '',
+                        uziMaxSize: '',
+                        cmVolume: '',
+                        cmMinSize: '',
+                        cmMaxSize: '',
+                        mrtVolume: '',
+                        mrtMinSize: '',
+                        mrtMaxSize: '',
+                        histologyBiopsyVolume: '',
+                        histologyBiopsyMinSize: '',
+                        histologyBiopsyMaxSize: '',
+                        cytologyVolume: 'N/A', // Цитология обычно не содержит размеры
+                        cytologyMinSize: 'N/A',
+                        cytologyMaxSize: 'N/A',
+                        histologyPostopVolume: '',
+                        histologyPostopMinSize: '',
+                        histologyPostopMaxSize: ''
+                      });
+                    }
+                  });
+                }
+              });
+            }
+
+            // Обрабатываем Гистологию послеоперационную
+            if (patientData.histology_postops && patientData.histology_postops.length > 0) {
+              patientData.histology_postops.forEach((histology, stageIdx) => {
+                // Для послеоперационной гистологии может не быть структурированных находок
+                // но мы можем добавить запись если есть данные
+                if (histology.findings || histology.ihc_results) {
+                  reportData.push({
+                    patientId: patient.id,
+                    diagnosis: patient.diagnosis || '',
+                    tnmStage: patient.tnm_stage || '',
+                    mkbCode: patient.mkb_code || '',
+                    studyStage: stageIdx + 1,
+                    findingNumber: 1,
+                    side: '',
+                    quadrantLocation: '',
+                    depthLocation: '',
+                    mammoVolume: '',
+                    mammoMinSize: '',
+                    mammoMaxSize: '',
+                    uziVolume: '',
+                    uziMinSize: '',
+                    uziMaxSize: '',
+                    cmVolume: '',
+                    cmMinSize: '',
+                    cmMaxSize: '',
+                    mrtVolume: '',
+                    mrtMinSize: '',
+                    mrtMaxSize: '',
+                    histologyBiopsyVolume: '',
+                    histologyBiopsyMinSize: '',
+                    histologyBiopsyMaxSize: '',
+                    cytologyVolume: '',
+                    cytologyMinSize: '',
+                    cytologyMaxSize: '',
+                    histologyPostopVolume: 'N/A', // Послеоперационная гистология - размеры из операции
+                    histologyPostopMinSize: 'N/A',
+                    histologyPostopMaxSize: 'N/A'
+                  });
+                }
+              });
+            }
+
+          } catch (error) {
+            console.error(`Ошибка загрузки данных пациента ${patient.id}:`, error);
+          }
+        }
+
+        if (reportData.length === 0) {
+          alert('Нет данных об образованиях для экспорта');
+          return;
+        }
+
+        // Создаем workbook
+        const wb = XLSX.utils.book_new();
+
+        // Создаем массив данных с мультииндексом
+        const aoa = [];
+
+        // Первая строка - основные заголовки (объединенные ячейки)
+        const headerRow1 = [
+          'ID Пациента',
+          'Диагноз (клинический)',
+          'Стадия по TNM',
+          'Код МКБ',
+          'Этап исследования',
+          'Номер находки (биоматериала)',
+          'Сторона',
+          'Локализация находки по квадрантам',
+          'Локализация находки по глубине МЖ',
+          'Маммография', '', '', // 3 колонки
+          'УЗИ МЖ', '', '', // 3 колонки
+          'КМ', '', '', // 3 колонки
+          'МРТ МЖ', '', '', // 3 колонки
+          'Гистология биопсии', '', '', // 3 колонки
+          'Цитология', '', '', // 3 колонки
+          'Гистология послеоперационная МЖ', '', '' // 3 колонки
+        ];
+
+        // Вторая строка - подзаголовки
+        const headerRow2 = [
+          '', '', '', '', '', '', '', '', '', // Пустые для основных колонок
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // Маммография
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // УЗИ МЖ
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // КМ
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // МРТ МЖ
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // Гистология биопсии
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер', // Цитология
+          'Объем поражения', 'Минимальный размер', 'Максимальный размер'  // Гистология послеоп
+        ];
+
+        aoa.push(headerRow1);
+        aoa.push(headerRow2);
+
+        // Добавляем данные
+        reportData.forEach(row => {
+          aoa.push([
+            row.patientId,
+            row.diagnosis,
+            row.tnmStage,
+            row.mkbCode,
+            row.studyStage,
+            row.findingNumber,
+            row.side,
+            row.quadrantLocation,
+            row.depthLocation,
+            row.mammoVolume,
+            row.mammoMinSize,
+            row.mammoMaxSize,
+            row.uziVolume,
+            row.uziMinSize,
+            row.uziMaxSize,
+            row.cmVolume,
+            row.cmMinSize,
+            row.cmMaxSize,
+            row.mrtVolume,
+            row.mrtMinSize,
+            row.mrtMaxSize,
+            row.histologyBiopsyVolume,
+            row.histologyBiopsyMinSize,
+            row.histologyBiopsyMaxSize,
+            row.cytologyVolume,
+            row.cytologyMinSize,
+            row.cytologyMaxSize,
+            row.histologyPostopVolume,
+            row.histologyPostopMinSize,
+            row.histologyPostopMaxSize
+          ]);
+        });
+
+        // Создаем worksheet из массива
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+        // Настраиваем объединение ячеек для мультииндекса
+        const merges = [
+          // Основные колонки (объединяем обе строки)
+          { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } }, // ID Пациента
+          { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } }, // Диагноз
+          { s: { r: 0, c: 2 }, e: { r: 1, c: 2 } }, // Стадия по TNM
+          { s: { r: 0, c: 3 }, e: { r: 1, c: 3 } }, // Код МКБ
+          { s: { r: 0, c: 4 }, e: { r: 1, c: 4 } }, // Этап исследования
+          { s: { r: 0, c: 5 }, e: { r: 1, c: 5 } }, // Номер находки
+          { s: { r: 0, c: 6 }, e: { r: 1, c: 6 } }, // Сторона
+          { s: { r: 0, c: 7 }, e: { r: 1, c: 7 } }, // Локализация по квадрантам
+          { s: { r: 0, c: 8 }, e: { r: 1, c: 8 } }, // Локализация по глубине
+
+          // Объединяем заголовки для групп колонок
+          { s: { r: 0, c: 9 }, e: { r: 0, c: 11 } },   // Маммография
+          { s: { r: 0, c: 12 }, e: { r: 0, c: 14 } },  // УЗИ МЖ
+          { s: { r: 0, c: 15 }, e: { r: 0, c: 17 } },  // КМ
+          { s: { r: 0, c: 18 }, e: { r: 0, c: 20 } },  // МРТ МЖ
+          { s: { r: 0, c: 21 }, e: { r: 0, c: 23 } },  // Гистология биопсии
+          { s: { r: 0, c: 24 }, e: { r: 0, c: 26 } },  // Цитология
+          { s: { r: 0, c: 27 }, e: { r: 0, c: 29 } }   // Гистология послеоп
+        ];
+
+        ws['!merges'] = merges;
+
+        // Устанавливаем ширину колонок
+        const colWidths = [
+          { wch: 15 }, // ID Пациента
+          { wch: 30 }, // Диагноз
+          { wch: 15 }, // Стадия по TNM
+          { wch: 15 }, // Код МКБ
+          { wch: 12 }, // Этап исследования
+          { wch: 15 }, // Номер находки
+          { wch: 15 }, // Сторона
+          { wch: 30 }, // Локализация квадранты
+          { wch: 30 }, // Локализация глубина
+          { wch: 18 }, // Маммография объем
+          { wch: 18 }, // Маммография мин
+          { wch: 18 }, // Маммография макс
+          { wch: 18 }, // УЗИ объем
+          { wch: 18 }, // УЗИ мин
+          { wch: 18 }, // УЗИ макс
+          { wch: 18 }, // КМ объем
+          { wch: 18 }, // КМ мин
+          { wch: 18 }, // КМ макс
+          { wch: 18 }, // МРТ объем
+          { wch: 18 }, // МРТ мин
+          { wch: 18 }, // МРТ макс
+          { wch: 18 }, // Гистология биопсии объем
+          { wch: 18 }, // Гистология биопсии мин
+          { wch: 18 }, // Гистология биопсии макс
+          { wch: 18 }, // Цитология объем
+          { wch: 18 }, // Цитология мин
+          { wch: 18 }, // Цитология макс
+          { wch: 18 }, // Гистология послеоп объем
+          { wch: 18 }, // Гистология послеоп мин
+          { wch: 18 }  // Гистология послеоп макс
+        ];
+        ws['!cols'] = colWidths;
+
+        // Применяем стили к заголовкам
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          // Первая строка заголовков
+          const addr1 = XLSX.utils.encode_cell({ r: 0, c: C });
+          if (!ws[addr1]) continue;
+          if (!ws[addr1].s) ws[addr1].s = {};
+          ws[addr1].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "70AD47" } },
+            alignment: { horizontal: "center", vertical: "center" }
+          };
+
+          // Вторая строка заголовков
+          const addr2 = XLSX.utils.encode_cell({ r: 1, c: C });
+          if (!ws[addr2]) continue;
+          if (!ws[addr2].s) ws[addr2].s = {};
+          ws[addr2].s = {
+            font: { bold: true },
+            fill: { fgColor: { rgb: "A9D08E" } },
+            alignment: { horizontal: "center", vertical: "center" }
+          };
+        }
+
+        XLSX.utils.book_append_sheet(wb, ws, 'Отчёт по образованиям');
+
+        // Сохраняем файл
+        const fileName = `Отчет_по_образованиям_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+
+        alert(`Экспорт завершён! Выгружено записей: ${reportData.length}`);
+      } catch (error) {
+        console.error('Ошибка экспорта:', error);
+        alert('Ошибка при экспорте данных: ' + error.message);
+      } finally {
+        this.exporting = false;
+      }
     }
   }
 }
@@ -313,6 +1147,11 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
 }
 
 .filters {
@@ -357,13 +1196,27 @@ export default {
   transition: all 0.3s;
 }
 
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background: #667eea;
   color: white;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: #5568d3;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #218838;
 }
 
 .btn-secondary {
@@ -426,6 +1279,11 @@ export default {
   color: #23d160;
   font-size: 12px;
   margin-top: 4px;
+}
+
+.text-muted {
+  color: #6c757d;
+  font-size: 0.875rem;
 }
 
 .modal {

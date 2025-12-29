@@ -423,8 +423,10 @@ class CytologyBiopsyFinding(Base):
     cytology_biopsy_id = Column(Integer, ForeignKey("cytology_biopsies.id"), nullable=False)
     finding_number = Column(Integer, nullable=True)
     affected_side = Column(String(50))
+    cytology_body_part = Column(String(50))
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
+    lymph_node_group = Column(String(50))
     diagnostic_category = Column(String(50))
     cytology_report = Column(String(100))
 

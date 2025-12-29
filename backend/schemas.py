@@ -435,8 +435,10 @@ class HistologyBiopsyFinding(HistologyBiopsyFindingBase):
 class CytologyBiopsyFindingBase(BaseModel):
     finding_number: Optional[int] = None
     affected_side: Optional[str] = None
+    cytology_body_part: Optional[str] = None
     quadrant_location: Optional[str] = None
     depth_location: Optional[str] = None
+    lymph_node_group: Optional[str] = None
     diagnostic_category: Optional[str] = None
     cytology_report: Optional[str] = None
 

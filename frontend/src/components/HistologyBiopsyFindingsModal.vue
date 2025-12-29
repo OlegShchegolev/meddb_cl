@@ -65,10 +65,28 @@
               <!-- Классификация опухоли МЖ ВОЗ 2019 (группа) -->
               <div class="form-group">
                 <label>Классификация опухоли МЖ ВОЗ 2019 (группа) *</label>
-                <select v-model="findingForm.classification_group" @change="onGroupChange" required class="input">
-                  <option value="">Выберите</option>
-                  <option v-for="group in findingClassificationGroups" :key="group" :value="group">{{ group }}</option>
-                </select>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    v-model="findingForm.classification_group"
+                    @input="filterGroups"
+                    @focus="showGroupDropdown = true"
+                    @blur="onGroupBlur"
+                    placeholder="Введите или выберите группу"
+                    required
+                    class="input"
+                  />
+                  <div v-if="showGroupDropdown && filteredGroups.length > 0" class="autocomplete-dropdown">
+                    <div
+                      v-for="group in filteredGroups"
+                      :key="group"
+                      @mousedown.prevent="selectGroup(group)"
+                      class="autocomplete-item"
+                    >
+                      {{ group }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -76,10 +94,28 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Классификация опухоли МЖ ВОЗ 2019 (вид)</label>
-                <select v-model="findingForm.classification_type" required class="input">
-                  <option value="">Выберите</option>
-                  <option v-for="type in findingClassificationTypes[findingForm.classification_group.split('.')[0]]" :key="type" :value="type">{{ type }}</option>
-                </select>
+                <div class="autocomplete-wrapper">
+                  <input
+                    type="text"
+                    v-model="findingForm.classification_type"
+                    @input="filterTypes"
+                    @focus="showTypeDropdown = true"
+                    @blur="onTypeBlur"
+                    placeholder="Введите или выберите вид"
+                    required
+                    class="input"
+                  />
+                  <div v-if="showTypeDropdown && filteredTypes.length > 0" class="autocomplete-dropdown">
+                    <div
+                      v-for="type in filteredTypes"
+                      :key="type"
+                      @mousedown.prevent="selectType(type)"
+                      class="autocomplete-item"
+                    >
+                      {{ type }}
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <!-- Гистологическая степень злокачественности опухоли -->
@@ -88,9 +124,19 @@
                 <select v-model="findingForm.malignancy_degree" class="input">
                   <option value="">Выберите</option>
                   <option value="Gx Категория G не может быть определена">Gx Категория G не может быть определена</option>
-                  <option value="G1 Низкая степень злокачественности (благоприятный вариант), 3–5 баллов по шкале SBR (Ноттингемская шкала)">G1 Низкая степень злокачественности (благоприятный вариант), 3–5 баллов по шкале SBR (Ноттингемская шкала)</option>
-                  <option value="G2 Умеренная степень злокачественности (промежуточный вариант), 6–7 баллов по шкале SBR (Ноттингемская шкала)">G2 Умеренная степень злокачественности (промежуточный вариант), 6–7 баллов по шкале SBR (Ноттингемская шкала)</option>
-                  <option value="G3 Высокая степень злокачественности (неблагоприятный вариант), 8–9 баллов по шкале SBR (Ноттингемская шкала)">G3 Высокая степень злокачественности (неблагоприятный вариант), 8–9 баллов по шкале SBR (Ноттингемская шкала)</option>
+                  <option value="G1 Низкая степень злокачественности (благоприятный вариант), 3–5 баллов по шкале SBR (Ноттингемская шкала)">G1 Низкая степень злокачественности (благоприятный вариант), 3–5
+                    баллов по шкале SBR (Ноттингемская шкала)
+                  </option>
+                  <option
+                      value="G2 Умеренная степень злокачественности (промежуточный вариант), 6–7 баллов по шкале SBR (Ноттингемская шкала)">
+                    G2 Умеренная степень злокачественности (промежуточный вариант), 6–7 баллов по шкале SBR
+                    (Ноттингемская шкала)
+                  </option>
+                  <option
+                      value="G3 Высокая степень злокачественности (неблагоприятный вариант), 8–9 баллов по шкале SBR (Ноттингемская шкала)">
+                    G3 Высокая степень злокачественности (неблагоприятный вариант), 8–9 баллов по шкале SBR
+                    (Ноттингемская шкала)
+                  </option>
                 </select>
               </div>
             </div>
@@ -123,6 +169,8 @@ export default {
       showAddFinding: false,
       editingFinding: null,
       selectedFeatures: [],
+
+      // Форма
       findingForm: {
         finding_number: null,
         affected_side: '',
@@ -132,6 +180,15 @@ export default {
         classification_type: '',
         malignancy_degree: '',
       },
+
+      // Автодополнение
+      showGroupDropdown: false,
+      showTypeDropdown: false,
+      filteredGroups: [],
+      filteredTypes: [],
+      allGroups: [],
+      allTypes: {},
+
       // Справочники
       quadrantLocations: dict.QUADRANT_LOCATIONS,
       depthLocations: dict.DEPTH_LOCATIONS,
@@ -142,6 +199,7 @@ export default {
   },
   mounted() {
     this.loadFindings()
+    this.initializeAutocompleteData()
   },
   methods: {
     async loadFindings() {
@@ -152,12 +210,103 @@ export default {
         console.error('Error loading findings:', error)
       }
     },
-    onGroupChange() {
-      // Очистить поля при смене типа
-      this.findingForm = {
-        ...this.findingForm,
-        classification_type: ''
+
+    initializeAutocompleteData() {
+      // Инициализация данных для автодополнения
+      this.allGroups = [...this.findingClassificationGroups]
+      this.allTypes = {...this.findingClassificationTypes}
+
+      // Преобразуем объект типов в плоский массив для поиска
+      this.flatTypes = []
+      Object.values(this.allTypes).forEach(types => {
+        this.flatTypes.push(...types)
+      })
+    },
+
+    filterGroups() {
+      const searchTerm = this.findingForm.classification_group.toLowerCase().trim()
+      if (!searchTerm) {
+        this.filteredGroups = [...this.allGroups]
+      } else {
+        this.filteredGroups = this.allGroups.filter(group =>
+            group.toLowerCase().includes(searchTerm)
+        )
       }
+      this.showGroupDropdown = true
+    },
+
+    filterTypes() {
+      const searchTerm = this.findingForm.classification_type.toLowerCase().trim()
+
+      // Определяем, какие типы показывать
+      let typesToSearch = []
+
+      if (this.findingForm.classification_group) {
+        // Если выбрана группа, ищем только в ее типах
+        const groupKey = this.findingForm.classification_group.split('.')[0]
+        typesToSearch = this.allTypes[groupKey] || []
+      } else {
+        // Если группа не выбрана, ищем во всех типах
+        typesToSearch = this.flatTypes
+      }
+
+      if (!searchTerm) {
+        this.filteredTypes = typesToSearch.slice(0, 20)
+      } else {
+        this.filteredTypes = typesToSearch.filter(type =>
+          type.toLowerCase().includes(searchTerm)
+        ).slice(0, 20)
+      }
+      this.showTypeDropdown = true
+    },
+
+    findGroupForType(type) {
+      // Ищем группу, к которой относится тип
+      for (const [groupKey, types] of Object.entries(this.allTypes)) {
+        if (types.includes(type)) {
+          // Находим полное название группы по ключу
+          return this.allGroups.find(group => group.startsWith(groupKey + '.'))
+        }
+      }
+      return null
+    },
+
+    selectGroup(group) {
+      this.findingForm.classification_group = group
+      this.showGroupDropdown = false
+      // Очищаем тип при смене группы
+      this.findingForm.classification_type = ''
+      this.filteredTypes = []
+    },
+
+    selectType(type) {
+      this.findingForm.classification_type = type
+
+      // Если группа не выбрана, автоматически находим и устанавливаем группу
+      if (!this.findingForm.classification_group) {
+        const foundGroup = this.findGroupForType(type)
+        if (foundGroup) {
+          this.findingForm.classification_group = foundGroup
+        }
+      }
+
+      this.showTypeDropdown = false
+    },
+
+    onGroupBlur() {
+      setTimeout(() => {
+        this.showGroupDropdown = false
+      }, 200)
+    },
+
+    onTypeBlur() {
+      setTimeout(() => {
+        this.showTypeDropdown = false
+      }, 200)
+    },
+
+    onGroupChange() {
+      // Очищаем только выбранные фичи
       this.selectedFeatures = []
 
       // Прокрутить к началу формы при смене типа
@@ -177,21 +326,31 @@ export default {
         }
       });
     },
+
     editFinding(finding) {
       this.editingFinding = finding.id
-
       this.findingForm = {...finding}
-
       this.showAddFinding = true
     },
+
     async saveFinding() {
       try {
+        // Если тип выбран, а группа нет - пытаемся найти группу автоматически
+        if (this.findingForm.classification_type && !this.findingForm.classification_group) {
+          const foundGroup = this.findGroupForType(this.findingForm.classification_type)
+          if (foundGroup) {
+            this.findingForm.classification_group = foundGroup
+          } else {
+            alert('Для выбранного типа не найдена соответствующая группа. Пожалуйста, выберите группу вручную.')
+            return
+          }
+        }
+
         // Формируем данные для отправки
         const data = {
           ...this.findingForm,
           histology_biopsy_id: this.histology_biopsy.id,
         }
-
 
         if (this.editingFinding) {
           await api.updateHistologyBiopsyFinding(this.editingFinding, data)
@@ -206,6 +365,7 @@ export default {
         alert('Ошибка сохранения находки: ' + (error.response?.data?.detail || error.message))
       }
     },
+
     async deleteFinding(id) {
       if (confirm('Удалить находку?')) {
         try {
@@ -217,17 +377,21 @@ export default {
         }
       }
     },
+
     closeAddModal() {
       this.showAddFinding = false
       this.editingFinding = null
       this.selectedFeatures = []
+      this.showGroupDropdown = false
+      this.showTypeDropdown = false
+      // Убрать очистку classification_type при закрытии
       this.findingForm = {
         finding_number: null,
         affected_side: '',
         quadrant_location: '',
         depth_location: '',
-        classification_group: '',
-        classification_type: '',
+        classification_group: '', // Оставляем пустым
+        classification_type: '',  // Оставляем пустым
         malignancy_degree: '',
       }
     }
@@ -241,6 +405,13 @@ export default {
             this.$refs.modalContent.scrollTop = 0;
           }
         });
+      }
+    },
+
+    'findingForm.classification_group'(newGroup) {
+      if (newGroup) {
+        // При изменении группы фильтруем типы
+        this.filterTypes()
       }
     }
   }
@@ -352,6 +523,40 @@ export default {
   padding: 2rem;
   width: 90%;
   max-width: 800px;
+}
+
+/* Стили автодополнения */
+.autocomplete-wrapper {
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ced4da;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.autocomplete-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.autocomplete-item:hover {
+  background-color: #f8f9fa;
+}
+
+.autocomplete-item:active {
+  background-color: #e9ecef;
 }
 
 /* Стили формы */
@@ -491,6 +696,7 @@ export default {
 
 .form-group {
   margin-bottom: 1rem;
+  position: relative;
 }
 
 .form-group label {
@@ -514,6 +720,11 @@ export default {
   border-color: #667eea;
   outline: none;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
 }
 
 .form-actions {
@@ -546,6 +757,10 @@ export default {
   .modal-xlarge {
     width: 95%;
     padding: 1rem;
+  }
+
+  .autocomplete-dropdown {
+    max-height: 150px;
   }
 }
 
