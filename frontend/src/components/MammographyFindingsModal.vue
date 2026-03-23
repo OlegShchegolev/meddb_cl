@@ -27,6 +27,7 @@
           <tbody>
             <tr v-for="finding in findings" :key="finding.id">
               <td>{{ finding.finding_number }}</td>
+              <td>{{ finding.affected_side }}</td>
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.depth_location }}</td>
               <td>{{ finding.finding_type }}</td>
@@ -55,6 +56,14 @@
           <form @submit.prevent="saveFinding">
             <div class="form-row">
               <div class="form-group">
+                <label>Сторона поражения *</label>
+                <select v-model="findingForm.affected_side" required class="input">
+                  <option value="">Выберите</option>
+                  <option value="Правая МЖ">Правая МЖ</option>
+                  <option value="Левая МЖ">Левая МЖ</option>
+                </select>
+              </div>
+              <div class="form-group">
                 <label>Локализация по квадрантам *</label>
                 <select v-model="findingForm.quadrant_location" required class="input">
                   <option value="">Выберите</option>
@@ -81,7 +90,7 @@
             </div>
 
             <!-- Поля для "Объемное образование" -->
-            <div v-if="findingForm.finding_type === 'Объемное образование'" class="finding-details">
+            <div v-if="findingForm.finding_type === 'Объемное образование'  || findingForm.finding_type === 'Кальцинаты' || findingForm.finding_type === 'Асимметрия'" class="finding-details">
               <h5>Описание объемного образования</h5>
               <div class="form-row">
                 <div class="form-group">
@@ -107,6 +116,13 @@
                     <option v-for="density in massDensities" :key="density" :value="density">{{ density }}</option>
                   </select>
                 </div>
+              </div>
+              <div class="form-group">
+                <label>Кальцинаты в структуре</label>
+                <select v-model="findingForm.calcification_in_structure" class="input">
+                  <option value="">Выберите</option>
+                    <option v-for="morph in calcificationInStructure" :key="morph" :value="morph">{{ morph }}</option>
+                </select>
               </div>
 
               <!-- Размеры для объемного образования -->
@@ -284,6 +300,7 @@ export default {
       findingForm: {
         finding_number: null,
         quadrant_location: '',
+        affected_side: '',
         depth_location: '',
         finding_type: '',
         mass_shape: '',
@@ -296,6 +313,7 @@ export default {
         size_max_mm: null,
         size_min_mm: null,
         asymmetry_type: '',
+        calcification_in_structure: '',
         calcification_malignancy: '',
         calcification_morphology: '',
         calcification_distribution: '',
@@ -312,6 +330,7 @@ export default {
       massMargins: dict.MASS_MARGINS,
       massDensities: dict.MASS_DENSITY,
       asymmetryTypes: dict.ASYMMETRY_TYPES,
+      calcificationInStructure: dict.CALCIFICATION_MORPHOLOGY,
       calcificationMalignancy: dict.CALCIFICATION_MALIGNANCY,
       calcificationMorphology: dict.CALCIFICATION_MORPHOLOGY,
       calcificationDistribution: dict.CALCIFICATION_DISTRIBUTION,
@@ -468,6 +487,11 @@ export default {
           data.volume_mm3 = null;
           data.size_max_mm = null;
           data.size_min_mm = null;
+        }
+
+        if (!this.findingForm.affected_side) {
+          alert('Необходимо выбрать сторону поражения');
+          return;
         }
 
         if (this.editingFinding) {

@@ -209,7 +209,7 @@
         <p v-else class="no-data">Нет данных</p>
       </div>
 
-      <!-- Гистология послеоперационная -->
+      <!-- В шаблоне изменить таблицу гистологии послеоперационной: -->
       <div v-if="activeTab === 'histology_postop'" class="section">
         <div class="section-header">
           <h3>Гистология и ИГХ (послеоперационная)</h3>
@@ -219,19 +219,18 @@
           <thead>
             <tr>
               <th>Дата</th>
-              <th>Заключение</th>
-              <th>ИГХ</th>
-              <th>Комментарий</th>
+              <th>Находки</th>
               <th>Действия</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="item in patient.histology_postops" :key="item.id">
               <td>{{ item.exam_date }}</td>
-              <td>{{ item.findings }}</td>
-              <td>{{ item.ihc_results }}</td>
-              <td>{{ item.comment }}</td>
-              <td><button @click="deleteHistPostop(item.id)" class="btn-sm btn-danger">Удалить</button></td>
+              <td>{{ item.findings?.length || 0 }}</td>
+              <td>
+                <button @click="viewHistPostopDetails(item)" class="btn-sm btn-info">Подробно</button>
+                <button @click="deleteHistPostop(item.id)" class="btn-sm btn-danger">Удалить</button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -668,6 +667,9 @@
                 <option value="40">40</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label>BI-RADS справа</label>
               <select v-model="mrtForm.birads_right" class="input">
@@ -683,9 +685,6 @@
                 <option value="BI-RADS-6">BI-RADS-6</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
             <div class="form-group">
               <label>BI-RADS слева</label>
               <select v-model="mrtForm.birads_left" class="input">
@@ -701,6 +700,9 @@
                 <option value="BI-RADS-6">BI-RADS-6</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label>Плотность ACR справа</label>
               <select v-model="mrtForm.acr_density_right" class="input">
@@ -711,9 +713,6 @@
                 <option value="D">D</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-row">
             <div class="form-group">
               <label>Плотность ACR слева</label>
               <select v-model="mrtForm.acr_density_left" class="input">
@@ -724,25 +723,26 @@
                 <option value="D">D</option>
               </select>
             </div>
+          </div>
+          <div class="form-row">
             <div class="form-group">
-              <label>Степень фонового контрастирования (BPE)</label>
-              <select v-model="mrtForm.bpe_level" class="input">
+                <label>Степень фонового контрастирования (BPE)</label>
+                <select v-model="mrtForm.bpe_level" class="input">
+                  <option value="">Выберите</option>
+                  <option value="минимальная">минимальная</option>
+                  <option value="слабая">слабая</option>
+                  <option value="умеренная">умеренная</option>
+                  <option value="выраженная">выраженная</option>
+                </select>
+            </div>
+            <div class="form-group">
+              <label>Симметрия фонового контрастирования</label>
+              <select v-model="mrtForm.bpe_symmetry" class="input">
                 <option value="">Выберите</option>
-                <option value="минимальная">минимальная</option>
-                <option value="слабая">слабая</option>
-                <option value="умеренная">умеренная</option>
-                <option value="выраженная">выраженная</option>
+                <option value="Симметричная">Симметричная</option>
+                <option value="Асимметричная">Асимметричная</option>
               </select>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>Симметрия фонового контрастирования</label>
-            <select v-model="mrtForm.bpe_symmetry" class="input">
-              <option value="">Выберите</option>
-              <option value="Симметричная">Симметричная</option>
-              <option value="Асимметричная">Асимметричная</option>
-            </select>
           </div>
 
           <div class="form-group">
@@ -804,13 +804,24 @@
     </div>
   </div>
 
-    <HistologyPostOpModal
-      v-if="showHistPostopModal"
-      title="Добавить гистологию (послеоперационная)"
-      :form="histPostopForm"
-      @close="showHistPostopModal = false"
-      @save="saveHistPostop"
-    />
+    <!-- В PatientDetail.vue заменить старый HistologyPostOpModal на: -->
+  <div v-if="showHistPostopModal" class="modal" @click.self="closeHistPostopModal">
+    <div class="modal-content modal-large">
+      <h3>Добавить Гистологию (послеоперационная)</h3>
+      <form @submit.prevent="saveHistPostop">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Дата исследования *</label>
+            <input v-model="histPostopForm.exam_date" type="date" required class="input">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" @click="closeHistPostopModal" class="btn btn-secondary">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
     <!-- Модал находок маммографии -->
     <MammographyFindingsModal
       v-if="selectedMammography"
@@ -848,6 +859,13 @@
     @close="selectedCytologyBiopsy = null"
     @updated="loadPatient"
   />
+  <!-- Модал послеоперационной гистологии -->
+  <HistologyPostopFindingsModal
+  v-if="selectedHistologyPostop"
+  :histology_postop="selectedHistologyPostop"
+  @close="selectedHistologyPostop = null"
+  @updated="loadPatient"
+/>
 </template>
 
 <script>
@@ -857,7 +875,8 @@ import ContrastMammographyModal from './ContrastMammographyModal.vue'
 import UltrasoundModal from './UltrasoundModal.vue'
 import MRTModal from './MRTModal.vue' // Добавьте этот импорт
 import HistologyBiopsyFindingsModal from "./HistologyBiopsyFindingsModal.vue" // Добавьте этот импорт
-import CytologyBiopsyFindingsModal from './CytologyBiopsyFindingsModal.vue';
+import CytologyBiopsyFindingsModal from './CytologyBiopsyFindingsModal.vue'
+import HistologyPostopFindingsModal from './HistologyPostopFindingsModal.vue';
 
 export default {
   components: {
@@ -866,7 +885,8 @@ export default {
     UltrasoundModal,
     MRTModal,
     HistologyBiopsyFindingsModal,
-    CytologyBiopsyFindingsModal
+    CytologyBiopsyFindingsModal,
+    HistologyPostopFindingsModal
   },
   data() {
     return {
@@ -954,7 +974,8 @@ export default {
       cytoBiopsyForm: { exam_date: '' },         // убрать findings
       selectedHistologyBiopsy: null,
       selectedCytologyBiopsy: null,
-      histPostopForm: { exam_date: '', findings: '', ihc_results: '', comment: '' }
+      selectedHistologyPostop: null,
+      histPostopForm: { exam_date: '' }
 
     }
   },
@@ -1251,16 +1272,28 @@ export default {
     async viewCytoBiopsyDetails(item) {
       this.selectedCytologyBiopsy = item
     },
-    async saveHistPostop() {
-      await api.createHistologyPostop({ ...this.histPostopForm, patient_id: this.patient.id })
-      this.showHistPostopModal = false
-      this.loadPatient()
-    },
     async deleteHistPostop(id) {
       if (confirm('Удалить запись?')) {
         await api.deleteHistologyPostop(id)
         this.loadPatient()
       }
+    },
+    async saveHistPostop() {
+      try {
+        await api.createHistologyPostop({ ...this.histPostopForm, patient_id: this.patient.id })
+        this.showHistPostopModal = false
+        this.loadPatient()
+      } catch (error) {
+        alert('Ошибка сохранения')
+      }
+    },
+
+    viewHistPostopDetails(item) {
+      this.selectedHistologyPostop = item
+    },
+    closeHistPostopModal() {
+      this.showHistPostopModal = false
+      this.histPostopForm = { exam_date: '' }
     }
   }
 }

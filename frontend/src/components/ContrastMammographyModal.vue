@@ -46,6 +46,7 @@
           <thead>
             <tr>
               <th>№</th>
+              <th>Сторона</th>
               <th>Локализация</th>
               <th>Тип</th>
               <th>Размеры, мм³</th>
@@ -56,6 +57,7 @@
           <tbody>
             <tr v-for="finding in leFindings" :key="finding.id">
               <td>{{ finding.finding_number }}</td>
+              <td>{{ finding.affected_side }}</td>
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.finding_type }}</td>
               <td>{{ finding.volume_mm3 }}</td>
@@ -81,6 +83,7 @@
           <thead>
             <tr>
               <th>№</th>
+              <th>Сторона</th>
               <th>Локализация</th>
               <th>Тип</th>
               <th>Размеры, мм³</th>
@@ -91,6 +94,7 @@
           <tbody>
             <tr v-for="finding in rcFindings" :key="finding.id">
               <td>{{ finding.finding_number }}</td>
+              <td>{{ finding.affected_side }}</td>
               <td>{{ finding.quadrant_location }}</td>
               <td>{{ finding.finding_type }}</td>
               <td>{{ finding.volume_mm3 }}</td>
@@ -110,6 +114,17 @@
         <div class="modal-content modal-large">
           <h4>{{ editingLEFindingId ? 'Редактировать находку LE' : 'Добавить находку LE' }}</h4>
           <form @submit.prevent="saveLEFinding">
+            <!-- Сторона поражения -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Сторона поражения *</label>
+                <select v-model="leFindingForm.affected_side" required class="input">
+                  <option value="">Выберите</option>
+                  <option value="Правая МЖ">Правая МЖ</option>
+                  <option value="Левая МЖ">Левая МЖ</option>
+                </select>
+              </div>
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label>Локализация по квадрантам *</label>
@@ -138,7 +153,7 @@
             </div>
 
             <!-- Динамические поля аналогично обычной маммографии -->
-            <div v-if="leFindingForm.finding_type === 'Объемное образование'" class="finding-details">
+            <div v-if="leFindingForm.finding_type === 'Объемное образование' || leFindingForm.finding_type === 'Асимметрия' || leFindingForm.finding_type === 'Кальцинаты' " class="finding-details">
               <h5>Описание объемного образования</h5>
               <div class="form-row">
                 <div class="form-group">
@@ -165,6 +180,16 @@
                   </select>
                 </div>
               </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Кальцинаты в структуре</label>
+                  <select v-model="leFindingForm.calcification_morphology" class="input">
+                  <option value="">Выберите</option>
+                  <option v-for="morph in calcificationInStructure" :key="morph" :value="morph">{{ morph }}</option>
+                </select>
+                </div>
+              </div>
+
 
               <!-- Размеры -->
               <div v-if="leFindingForm.mass_shape === 'Округлая'" class="form-group">
@@ -318,6 +343,17 @@
         <div class="modal-content modal-large">
           <h4>{{ editingRCFindingId ? 'Редактировать находку RC' : 'Добавить находку RC' }}</h4>
           <form @submit.prevent="saveRCFinding">
+            <!-- Сторона поражения -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Сторона поражения *</label>
+                <select v-model="rcFindingForm.affected_side" required class="input">
+                  <option value="">Выберите</option>
+                  <option value="Правая МЖ">Правая МЖ</option>
+                  <option value="Левая МЖ">Левая МЖ</option>
+                </select>
+              </div>
+            </div>
             <div class="form-row">
               <div class="form-group">
                 <label>Локализация по квадрантам *</label>
@@ -346,7 +382,7 @@
             </div>
 
             <!-- Объемное образование -->
-            <div v-if="rcFindingForm.finding_type === 'Образование'" class="finding-details">
+            <div class="finding-details">
               <h5>Описание объемного образования</h5>
               <div class="form-row">
                 <div class="form-group">
@@ -511,6 +547,7 @@ export default {
       massMargins: dict.MASS_MARGINS,
       massDensities: dict.MASS_DENSITY,
       asymmetryTypes: dict.ASYMMETRY_TYPES,
+      calcificationInStructure: dict.CALCIFICATION_MORPHOLOGY,
       calcificationMalignancy: dict.CALCIFICATION_MALIGNANCY,
       calcificationMorphology: dict.CALCIFICATION_MORPHOLOGY,
       calcificationDistribution: dict.CALCIFICATION_DISTRIBUTION,
@@ -529,6 +566,7 @@ export default {
     getEmptyLEForm() {
       return {
         finding_number: null,
+        affected_side: '',
         quadrant_location: '',
         depth_location: '',
         finding_type: '',
@@ -536,6 +574,7 @@ export default {
         mass_margin: '',
         mass_density: '',
         asymmetry_type: '',
+        calcification_in_structure: '',
         calcification_malignancy: '',
         calcification_morphology: '',
         calcification_distribution: '',
@@ -557,6 +596,7 @@ export default {
     getEmptyRCForm() {
       return {
         finding_number: null,
+        affected_side: '',
         quadrant_location: '',
         depth_location: '',
         finding_type: '',
@@ -702,7 +742,7 @@ export default {
       this.editingLEFindingId = finding.id;
       this.leFindingForm = { ...finding };
 
-      if (this.leFindingForm.finding_type === 'Объемное образование' &&
+      if ((this.leFindingForm.finding_type === 'Объемное образование' || this.leFindingForm.finding_type === 'Асимметрия') &&
           this.leFindingForm.size_x_mm &&
           this.leFindingForm.size_y_mm &&
           this.leFindingForm.size_z_mm) {
@@ -727,6 +767,20 @@ export default {
     },
 
     async saveLEFinding() {
+      // Валидация обязательных полей
+      if (!this.leFindingForm.affected_side) {
+        alert('Необходимо выбрать сторону поражения');
+        return;
+      }
+      if (!this.leFindingForm.quadrant_location) {
+        alert('Необходимо выбрать квадрант локализации');
+        return;
+      }
+      if (!this.leFindingForm.finding_type) {
+        alert('Необходимо выбрать тип находки');
+        return;
+      }
+
       try {
         const data = {
           ...this.leFindingForm,
@@ -748,6 +802,20 @@ export default {
     },
 
     async saveRCFinding() {
+      // Валидация обязательных полей
+      if (!this.rcFindingForm.affected_side) {
+        alert('Необходимо выбрать сторону поражения');
+        return;
+      }
+      if (!this.rcFindingForm.quadrant_location) {
+        alert('Необходимо выбрать квадрант локализации');
+        return;
+      }
+      if (!this.rcFindingForm.finding_type) {
+        alert('Необходимо выбрать тип находки');
+        return;
+      }
+
       try {
         const data = {
           ...this.rcFindingForm,

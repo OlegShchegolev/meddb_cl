@@ -24,18 +24,32 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>СНИЛС</th>
-          <th>ФИО</th>
-          <th>Пол</th>
-          <th>Дата рождения</th>
-          <th>Диагноз</th>
-          <th>Последнее обновление</th>
+          <th @click="setSort('id')" class="sortable">
+            ID <span class="sort-icon">{{ sortIcon('id') }}</span>
+          </th>
+          <th @click="setSort('snils')" class="sortable">
+            СНИЛС <span class="sort-icon">{{ sortIcon('snils') }}</span>
+          </th>
+          <th @click="setSort('last_name')" class="sortable">
+            ФИО <span class="sort-icon">{{ sortIcon('last_name') }}</span>
+          </th>
+          <th @click="setSort('gender')" class="sortable">
+            Пол <span class="sort-icon">{{ sortIcon('gender') }}</span>
+          </th>
+          <th @click="setSort('date_of_birth')" class="sortable">
+            Дата рождения <span class="sort-icon">{{ sortIcon('date_of_birth') }}</span>
+          </th>
+          <th @click="setSort('diagnosis')" class="sortable">
+            Диагноз <span class="sort-icon">{{ sortIcon('diagnosis') }}</span>
+          </th>
+          <th @click="setSort('last_updated')" class="sortable">
+            Последнее обновление <span class="sort-icon">{{ sortIcon('last_updated') }}</span>
+          </th>
           <th>Действия</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="patient in patients" :key="patient.id">
+        <tr v-for="patient in sortedPatients" :key="patient.id">
           <td>{{ patient.id }}</td>
           <td>{{ patient.snils }}</td>
           <td>{{ patient.last_name }} {{ patient.first_name }} {{ patient.middle_name }}</td>
@@ -56,9 +70,12 @@
       <div class="modal-content">
         <h3>{{ editingPatient ? 'Редактировать пациента' : 'Добавить пациента' }}</h3>
         <form @submit.prevent="savePatient">
-          <div class="form-group" v-if="!editingPatient">
+          <div class="form-group">
             <label>ID пациента *</label>
             <input v-model="form.id" required class="input" placeholder="Например: P001">
+            <small v-if="editingPatient && form.id !== editingPatient" class="text-warning">
+              ⚠️ ID будет изменён с «{{ editingPatient }}» на «{{ form.id }}»
+            </small>
           </div>
           <div class="form-group">
             <label>СНИЛС</label>
@@ -180,13 +197,46 @@ export default {
       snilsTouched: false,
       maxDate: new Date().toISOString().split('T')[0],
       minDate: '1900-01-01',
-      exporting: false
+      exporting: false,
+      sortKey: '',
+      sortDir: 1   // 1 = по возрастанию, -1 = по убыванию
     }
   },
   mounted() {
     this.loadPatients()
   },
+  computed: {
+    sortedPatients() {
+      if (!this.sortKey) return this.patients
+
+      return [...this.patients].sort((a, b) => {
+        let valA = a[this.sortKey] ?? ''
+        let valB = b[this.sortKey] ?? ''
+
+        // Для дат сравниваем как строки ISO — они сортируются корректно
+        // Для строк приводим к нижнему регистру
+        if (typeof valA === 'string') valA = valA.toLowerCase()
+        if (typeof valB === 'string') valB = valB.toLowerCase()
+
+        if (valA < valB) return -1 * this.sortDir
+        if (valA > valB) return 1 * this.sortDir
+        return 0
+      })
+    }
+  },
   methods: {
+    setSort(key) {
+      if (this.sortKey === key) {
+        this.sortDir *= -1  // переключаем направление
+      } else {
+        this.sortKey = key
+        this.sortDir = 1
+      }
+    },
+    sortIcon(key) {
+      if (this.sortKey !== key) return '⇅'
+      return this.sortDir === 1 ? '↑' : '↓'
+    },
     formatDate(dateString) {
       const date = new Date(dateString);
       return date.toLocaleDateString('ru-RU');
@@ -222,10 +272,12 @@ export default {
         }
 
         if (this.editingPatient) {
-          await api.updatePatient(this.editingPatient, dataToSend)
+          const oldId = this.editingPatient  // сохраняем старый ID до закрытия модала
+          await api.updatePatient(oldId, dataToSend)
         } else {
           await api.createPatient(dataToSend)
         }
+
         this.closeModal()
         this.loadPatients()
       } catch (error) {
@@ -1324,5 +1376,28 @@ export default {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 1.5rem;
+}
+
+.text-warning {
+  color: #e67e00;
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 4px;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable:hover {
+  background: #e9ecef;
+}
+
+.sort-icon {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-left: 4px;
 }
 </style>

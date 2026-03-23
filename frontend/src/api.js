@@ -242,7 +242,6 @@ export default {
 
   // ==================== ULTRASOUND API METHODS ====================
 
-  // Ultrasound
   getUltrasounds(patientId) {
     return api.get('/ultrasounds/', {
       params: { patient_id: patientId }
@@ -297,5 +296,22 @@ export default {
 
   deleteUltrasoundLymphNode(id) {
     return api.delete(`/ultrasound-lymph-nodes/${id}`)
+  },
+
+  // Histology Postop Findings
+  getHistologyPostopFindings(histologyPostopId) {
+    return api.get(`/histology-postop-findings/${histologyPostopId}`)
+  },
+
+  createHistologyPostopFinding(data) {
+    return api.post('/histology-postop-findings/', data)
+  },
+
+  updateHistologyPostopFinding(id, data) {
+    return api.put(`/histology-postop-findings/${id}`, data)
+  },
+
+  deleteHistologyPostopFinding(id) {
+    return api.delete(`/histology-postop-findings/${id}`)
   }
 }

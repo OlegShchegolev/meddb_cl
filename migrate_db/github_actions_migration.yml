@@ -1,0 +1,239 @@
+name: Database Migration
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'database.py'
+      - 'alembic/versions/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'database.py'
+      - 'alembic/versions/**'
+
+jobs:
+  check-migration:
+    name: Check if migration needed
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: medical_user
+          POSTGRES_PASSWORD: medical_pass
+          POSTGRES_DB: medical_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements_migration.txt
+        pip install psycopg2-binary
+    
+    - name: Setup database
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 -c "from database import init_db; init_db()"
+    
+    - name: Check for schema changes
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 compare_schemas.py --quick
+    
+    - name: Generate migration preview
+      if: failure()
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 compare_schemas.py
+
+  test-migration:
+    name: Test migration on staging
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: medical_user
+          POSTGRES_PASSWORD: medical_pass
+          POSTGRES_DB: medical_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements_migration.txt
+        pip install psycopg2-binary
+    
+    - name: Setup Alembic
+      run: |
+        python3 setup_migrations.py
+    
+    - name: Create test data
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 -c "
+from database import init_db, SessionLocal, Patient
+from datetime import date
+
+init_db()
+db = SessionLocal()
+
+# Создаем тестовые данные
+patient = Patient(
+    id='TEST001',
+    snils='123-456-789 00',
+    last_name='Иванов',
+    first_name='Иван',
+    gender='М',
+    date_of_birth=date(1980, 1, 1)
+)
+db.add(patient)
+db.commit()
+print('Test data created')
+"
+    
+    - name: Run migration
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 migrate_db.py --apply
+    
+    - name: Verify data integrity
+      env:
+        DATABASE_URL: postgresql://medical_user:medical_pass@localhost:5432/medical_db
+      run: |
+        python3 -c "
+from database import SessionLocal, Patient
+
+db = SessionLocal()
+patients = db.query(Patient).all()
+print(f'Found {len(patients)} patients after migration')
+assert len(patients) > 0, 'Data lost during migration!'
+print('✓ Data integrity verified')
+"
+
+  deploy-migration:
+    name: Deploy migration to production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [check-migration, test-migration]
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements_migration.txt
+        pip install psycopg2-binary
+    
+    - name: Create backup
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      run: |
+        python3 backup_db.py backup --dir ./prod_backups
+    
+    - name: Upload backup to S3
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Sync backup to S3
+      run: |
+        aws s3 sync ./prod_backups s3://your-backup-bucket/database-backups/
+    
+    - name: Run migration
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      run: |
+        python3 migrate_db.py --apply -y
+    
+    - name: Verify migration
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      run: |
+        python3 compare_schemas.py --quick
+    
+    - name: Notify on success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: "✅ Database migration completed successfully on production",
+            attachments: [{
+              color: 'good',
+              text: `Branch: ${process.env.GITHUB_REF}\nCommit: ${process.env.GITHUB_SHA}`
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+    
+    - name: Rollback on failure
+      if: failure()
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      run: |
+        echo "Migration failed, attempting rollback..."
+        python3 migrate_db.py --rollback
+    
+    - name: Notify on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: "❌ Database migration FAILED on production",
+            attachments: [{
+              color: 'danger',
+              text: `Branch: ${process.env.GITHUB_REF}\nCommit: ${process.env.GITHUB_SHA}\nAction: Rolled back to previous version`
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

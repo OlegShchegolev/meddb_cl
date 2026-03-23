@@ -2,7 +2,7 @@
   <div class="findings-modal modal" @click.self="$emit('close')">
     <div class="modal-content modal-xlarge">
       <div class="modal-header">
-        <h3>Находки гистологии по биопсии (Дата: {{ histology_biopsy.exam_date }})</h3>
+        <h3>Находки послеоперационной гистологии (Дата: {{ histology_postop.exam_date }})</h3>
         <button @click="$emit('close')" class="btn-close">×</button>
       </div>
 
@@ -75,8 +75,8 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Локализация по квадрантам *</label>
-                  <select v-model="findingForm.quadrant_location" required class="input">
+                  <label>Локализация по квадрантам</label>
+                  <select v-model="findingForm.quadrant_location" class="input">
                     <option value="">Выберите</option>
                     <option v-for="loc in quadrantLocations" :key="loc" :value="loc">{{ loc }}</option>
                   </select>
@@ -85,8 +85,8 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label>Локализация по глубине МЖ *</label>
-                  <select v-model="findingForm.depth_location" required class="input">
+                  <label>Локализация по глубине МЖ</label>
+                  <select v-model="findingForm.depth_location" class="input">
                     <option value="">Выберите</option>
                     <option v-for="depth in depthLocations" :key="depth" :value="depth">{{ depth }}</option>
                   </select>
@@ -96,21 +96,10 @@
 
             <!-- Поля для Лимфатического узла -->
             <div v-if="findingForm.finding_location === 'Лимфатический узел'">
-<!--              <div class="form-row">-->
-<!--                <div class="form-group">-->
-<!--                  <label>Сторона *</label>-->
-<!--                  <select v-model="findingForm.affected_side" required class="input">-->
-<!--                    <option value="">Выберите</option>-->
-<!--                    <option value="Правая МЖ">Правая МЖ</option>-->
-<!--                    <option value="Левая МЖ">Левая МЖ</option>-->
-<!--                  </select>-->
-<!--                </div>-->
-<!--              </div>-->
-
               <div class="form-row">
                 <div class="form-group">
-                  <label>Группа измененных ЛУ *</label>
-                  <select v-model="findingForm.lymph_node_group" required class="input">
+                  <label>Группа измененных ЛУ</label>
+                  <select v-model="findingForm.lymph_node_group" class="input">
                     <option value="">Выберите</option>
                     <option v-for="group in lymphNodeGroups" :key="group" :value="group">{{ group }}</option>
                   </select>
@@ -118,10 +107,33 @@
               </div>
             </div>
 
+            <!-- Размеры находки -->
+            <div class="form-row form-row-3">
+              <div class="form-group">
+                <label>Размер 1 (мм)</label>
+                <input v-model.number="findingForm.size_1_mm" @input="calculateMetrics" type="number" min="0" class="input">
+              </div>
+              <div class="form-group">
+                <label>Размер 2 (мм)</label>
+                <input v-model.number="findingForm.size_2_mm" @input="calculateMetrics" type="number" min="0" class="input">
+              </div>
+              <div class="form-group">
+                <label>Размер 3 (мм)</label>
+                <input v-model.number="findingForm.size_3_mm" @input="calculateMetrics" type="number" min="0" class="input">
+              </div>
+            </div>
+
+            <!-- Рассчитанные параметры -->
+            <div v-if="findingForm.volume_mm3 || findingForm.size_max_mm" class="calculated-metrics">
+              <div v-if="findingForm.volume_mm3"><strong>Объем:</strong> {{ findingForm.volume_mm3 }} мм³</div>
+              <div v-if="findingForm.size_max_mm"><strong>Максимальный размер:</strong> {{ findingForm.size_max_mm }} мм</div>
+              <div v-if="findingForm.size_min_mm"><strong>Минимальный размер:</strong> {{ findingForm.size_min_mm }} мм</div>
+            </div>
+
             <!-- Морфологическое заключение -->
             <div class="form-row">
               <div class="form-group">
-                <label>Морфологическое заключение (текст)</label>
+                <label>Морфологическое заключение</label>
                 <textarea
                   v-model="findingForm.morphological_conclusion"
                   class="input textarea"
@@ -182,7 +194,7 @@
             <!-- Заключение по ИГХ -->
             <div class="form-row">
               <div class="form-group">
-                <label>Заключение по ИГХ (текст)</label>
+                <label>Заключение по ИГХ</label>
                 <textarea
                   v-model="findingForm.ihc_conclusion"
                   class="input textarea"
@@ -200,7 +212,7 @@
                   type="text"
                   v-model="findingForm.er_value"
                   class="input"
-                  placeholder="Значение ER (например: 90%)"
+                  placeholder="Значение ER"
                 />
               </div>
               <div class="form-group">
@@ -209,7 +221,7 @@
                   type="text"
                   v-model="findingForm.pr_value"
                   class="input"
-                  placeholder="Значение PR (например: 85%)"
+                  placeholder="Значение PR"
                 />
               </div>
               <div class="form-group">
@@ -218,7 +230,7 @@
                   type="text"
                   v-model="findingForm.her2_value"
                   class="input"
-                  placeholder="Значение HER2 (например: 3+)"
+                  placeholder="Значение HER2"
                 />
               </div>
               <div class="form-group">
@@ -227,7 +239,7 @@
                   type="text"
                   v-model="findingForm.ki67_value"
                   class="input"
-                  placeholder="Значение Ki-67 (например: 20%)"
+                  placeholder="Значение Ki-67"
                 />
               </div>
             </div>
@@ -248,8 +260,9 @@ import api from '../api'
 import * as dict from '../dictionaries'
 
 export default {
+  name: 'HistologyPostopFindingsModal',
   props: {
-    histology_biopsy: {
+    histology_postop: {
       type: Object,
       required: true
     }
@@ -276,6 +289,12 @@ export default {
         pr_value: '',
         her2_value: '',
         ki67_value: '',
+        size_1_mm: null,
+        size_2_mm: null,
+        size_3_mm: null,
+        volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null
       },
 
       // Автодополнение
@@ -284,11 +303,11 @@ export default {
       allClassifications: [],
 
       // Справочники
-      findingLocations: dict.HISTOLOGY_FINDING_LOCATIONS,
-      lymphNodeGroups: dict.LYMPH_NODE_GROUPS,
-      quadrantLocations: dict.QUADRANT_LOCATIONS,
-      depthLocations: dict.DEPTH_LOCATIONS,
-      whoClassifications: dict.WHO_CLASSIFICATION_2019
+      findingLocations: dict.HISTOLOGY_FINDING_LOCATIONS || [],
+      lymphNodeGroups: dict.LYMPH_NODE_GROUPS || [],
+      quadrantLocations: dict.QUADRANT_LOCATIONS || [],
+      depthLocations: dict.DEPTH_LOCATIONS || [],
+      whoClassifications: dict.WHO_CLASSIFICATION_2019 || []
     }
   },
   mounted() {
@@ -298,7 +317,7 @@ export default {
   methods: {
     async loadFindings() {
       try {
-        const response = await api.getHistologyBiopsyFindings(this.histology_biopsy.id)
+        const response = await api.getHistologyPostopFindings(this.histology_postop.id)
         this.findings = response.data
       } catch (error) {
         console.error('Error loading findings:', error)
@@ -306,18 +325,17 @@ export default {
     },
 
     initializeAutocompleteData() {
-      this.allClassifications = [...this.whoClassifications]
+      this.allClassifications = Array.isArray(this.whoClassifications)
+        ? [...this.whoClassifications]
+        : []
     },
 
     onFindingLocationChange() {
-      // Очищаем поля при смене типа локализации
       if (this.findingForm.finding_location === 'Молочная железа') {
         this.findingForm.lymph_node_group = ''
-        // affected_side используется для молочной железы, не очищаем
       } else if (this.findingForm.finding_location === 'Лимфатический узел') {
         this.findingForm.quadrant_location = ''
         this.findingForm.depth_location = ''
-        this.findingForm.affected_side = '' // Очищаем, т.к. для ЛУ сторона не используется
       }
     },
 
@@ -344,6 +362,36 @@ export default {
       }, 200)
     },
 
+    calculateMetrics() {
+      const x = this.findingForm.size_1_mm
+      const y = this.findingForm.size_2_mm
+      const z = this.findingForm.size_3_mm
+
+      // Рассчитываем max и min
+      if (x || y || z) {
+        const sizes = [x, y, z].filter(size => size !== null && size !== undefined && size !== '' && size > 0)
+
+        if (sizes.length > 0) {
+          this.findingForm.size_max_mm = Math.max(...sizes)
+          this.findingForm.size_min_mm = Math.min(...sizes)
+        } else {
+          this.findingForm.size_max_mm = null
+          this.findingForm.size_min_mm = null
+        }
+      } else {
+        this.findingForm.size_max_mm = null
+        this.findingForm.size_min_mm = null
+      }
+
+      // Рассчитываем объем
+      if (x && y && z && x > 0 && y > 0 && z > 0) {
+        const volume = (4/3) * Math.PI * (x/2) * (y/2) * (z/2)
+        this.findingForm.volume_mm3 = Math.round(volume)
+      } else {
+        this.findingForm.volume_mm3 = null
+      }
+    },
+
     editFinding(finding) {
       this.editingFinding = finding.id
       this.findingForm = {...finding}
@@ -351,45 +399,23 @@ export default {
     },
 
     async saveFinding() {
-      // Валидация обязательных полей
-      if (!this.findingForm.finding_location) {
-        alert('Необходимо выбрать локализацию находки');
-        return;
-      }
-
-      // Дополнительная валидация в зависимости от типа локализации
-      if (this.findingForm.finding_location === 'Молочная железа') {
-        if (!this.findingForm.quadrant_location) {
-          alert('Необходимо выбрать локализацию по квадрантам для молочной железы');
-          return;
-        }
-        if (!this.findingForm.depth_location) {
-          alert('Необходимо выбрать локализацию по глубине для молочной железы');
-          return;
-        }
-      } else if (this.findingForm.finding_location === 'Лимфатический узел') {
-        if (!this.findingForm.lymph_node_group) {
-          alert('Необходимо выбрать группу лимфатических узлов');
-          return;
-        }
-      }
-
       try {
         const data = {
           ...this.findingForm,
-          histology_biopsy_id: this.histology_biopsy.id,
+          histology_postop_id: this.histology_postop.id,
         }
 
         if (this.editingFinding) {
-          await api.updateHistologyBiopsyFinding(this.editingFinding, data)
+          await api.updateHistologyPostopFinding(this.editingFinding, data)
         } else {
-          await api.createHistologyBiopsyFinding(data)
+          await api.createHistologyPostopFinding(data)
         }
 
         this.closeAddModal()
         this.loadFindings()
         this.$emit('updated')
       } catch (error) {
+        console.error('Error saving finding:', error)
         alert('Ошибка сохранения находки: ' + (error.response?.data?.detail || error.message))
       }
     },
@@ -397,7 +423,7 @@ export default {
     async deleteFinding(id) {
       if (confirm('Удалить находку?')) {
         try {
-          await api.deleteHistologyBiopsyFinding(id)
+          await api.deleteHistologyPostopFinding(id)
           this.loadFindings()
           this.$emit('updated')
         } catch (error) {
@@ -425,6 +451,12 @@ export default {
         pr_value: '',
         her2_value: '',
         ki67_value: '',
+        size_1_mm: null,
+        size_2_mm: null,
+        size_3_mm: null,
+        volume_mm3: null,
+        size_max_mm: null,
+        size_min_mm: null
       }
     }
   },
@@ -443,7 +475,6 @@ export default {
 </script>
 
 <style scoped>
-/* Основные стили модального окна */
 .findings-modal.modal {
   position: fixed;
   top: 0;
@@ -512,7 +543,6 @@ export default {
   margin-bottom: 1rem;
 }
 
-/* Внутреннее модальное окно */
 .inner-modal-wrapper {
   position: fixed;
   top: 0;
@@ -549,7 +579,6 @@ export default {
   max-width: 900px;
 }
 
-/* Стили автодополнения */
 .autocomplete-wrapper {
   position: relative;
 }
@@ -614,7 +643,6 @@ export default {
   font-style: italic;
 }
 
-/* Кнопки */
 .btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -655,12 +683,15 @@ export default {
   cursor: pointer;
 }
 
-/* Форма */
 .form-row {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.form-row-3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .form-row-4 {
@@ -701,6 +732,20 @@ export default {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.calculated-metrics {
+  background: #e9ecef;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.calculated-metrics div {
+  font-size: 0.9rem;
+}
+
 .form-actions {
   display: flex;
   gap: 1rem;
@@ -715,9 +760,9 @@ export default {
   margin-bottom: -1rem;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .form-row,
+  .form-row-3,
   .form-row-4 {
     grid-template-columns: 1fr;
     gap: 0.5rem;

@@ -54,6 +54,7 @@ class MammographyFindingBase(BaseModel):
     mass_margin: Optional[str] = None
     mass_density: Optional[str] = None
     asymmetry_type: Optional[str] = None
+    calcification_in_structure: Optional[str] = None
     calcification_malignancy: Optional[str] = None
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
@@ -112,6 +113,7 @@ class Mammography(MammographyBase):
 # Contrast Mammography LE Finding Schemas
 class ContrastMammographyLEFindingBase(BaseModel):
     finding_number: Optional[int] = None
+    affected_side: Optional[str] = None
     quadrant_location: Optional[str] = None
     depth_location: Optional[str] = None
     finding_type: Optional[str] = None
@@ -119,6 +121,7 @@ class ContrastMammographyLEFindingBase(BaseModel):
     mass_margin: Optional[str] = None
     mass_density: Optional[str] = None
     asymmetry_type: Optional[str] = None
+    calcification_in_structure: Optional[str] = None
     calcification_malignancy: Optional[str] = None
     calcification_morphology: Optional[str] = None
     calcification_distribution: Optional[str] = None
@@ -154,6 +157,7 @@ class ContrastMammographyLEFinding(ContrastMammographyLEFindingBase):
 # Contrast Mammography RC Finding Schemas
 class ContrastMammographyRCFindingBase(BaseModel):
     finding_number: Optional[int] = None
+    affected_side: Optional[str] = None
     quadrant_location: Optional[str] = None
     depth_location: Optional[str] = None
     finding_type: Optional[str] = None
@@ -411,21 +415,38 @@ class MRT(MRTBase):
 # Histology Biopsy Finding Schemas
 class HistologyBiopsyFindingBase(BaseModel):
     finding_number: Optional[int] = None
+    finding_location: Optional[str] = None  # "Молочная железа" или "Лимфатический узел"
     affected_side: Optional[str] = None
     quadrant_location: Optional[str] = None
     depth_location: Optional[str] = None
-    classification_group: Optional[str] = None
-    classification_type: Optional[str] = None
+    lymph_node_group: Optional[str] = None  # только для "Лимфатический узел"
+
+    # Морфологическое заключение
+    morphological_conclusion: Optional[str] = None
+
+    # Классификация опухоли МЖ ВОЗ 2019
+    who_classification: Optional[str] = None
+
+    # Гистологическая степень злокачественности
     malignancy_degree: Optional[str] = None
+
+    # Заключение по ИГХ
+    ihc_conclusion: Optional[str] = None
+
+    # ИГХ маркеры
+    er_value: Optional[str] = None
+    pr_value: Optional[str] = None
+    her2_value: Optional[str] = None
+    ki67_value: Optional[str] = None
 
 
 class HistologyBiopsyFindingCreate(HistologyBiopsyFindingBase):
-    histology_biopsy_id: int  # Note: это должно быть histology_biopsy_id в базе, но в модели указано cytology_id
+    histology_biopsy_id: int
 
 
 class HistologyBiopsyFinding(HistologyBiopsyFindingBase):
     id: int
-    histology_biopsy_id: int  # Note: это должно быть histology_biopsy_id
+    histology_biopsy_id: int
 
     class Config:
         from_attributes = True
@@ -491,12 +512,43 @@ class CytologyBiopsy(CytologyBiopsyBase):
         from_attributes = True
 
 
-# Histology Postop Schemas
+# Histology Postop Finding Schemas
+class HistologyPostopFindingBase(BaseModel):
+    finding_number: Optional[int] = None
+    finding_location: Optional[str] = None
+    affected_side: Optional[str] = None
+    quadrant_location: Optional[str] = None
+    depth_location: Optional[str] = None
+    lymph_node_group: Optional[str] = None
+    morphological_conclusion: Optional[str] = None
+    who_classification: Optional[str] = None
+    malignancy_degree: Optional[str] = None
+    ihc_conclusion: Optional[str] = None
+    er_value: Optional[str] = None
+    pr_value: Optional[str] = None
+    her2_value: Optional[str] = None
+    ki67_value: Optional[str] = None
+    size_1_mm: Optional[int] = None
+    size_2_mm: Optional[int] = None
+    size_3_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
+    size_max_mm: Optional[int] = None
+    size_min_mm: Optional[int] = None
+
+
+class HistologyPostopFindingCreate(HistologyPostopFindingBase):
+    histology_postop_id: int
+
+
+class HistologyPostopFinding(HistologyPostopFindingBase):
+    id: int
+    histology_postop_id: int
+
+    class Config:
+        from_attributes = True
+
 class HistologyPostopBase(BaseModel):
     exam_date: date
-    findings: Optional[str] = None
-    ihc_results: Optional[str] = None
-    comment: Optional[str] = None
 
 
 class HistologyPostopCreate(HistologyPostopBase):
@@ -506,12 +558,11 @@ class HistologyPostopCreate(HistologyPostopBase):
 class HistologyPostop(HistologyPostopBase):
     id: int
     patient_id: str
+    findings: List[HistologyPostopFinding] = []
 
     class Config:
         from_attributes = True
 
-
-# Combined Patient Schema
 class PatientWithData(Patient):
     mammographies: List[Mammography] = []
     contrast_mammographies: List[ContrastMammography] = []
@@ -519,4 +570,4 @@ class PatientWithData(Patient):
     mrts: List[MRT] = []
     histology_biopsies: List[HistologyBiopsy] = []
     cytology_biopsies: List[CytologyBiopsy] = []
-    histology_postops: List[HistologyPostop] = []
+    histology_postops: List[HistologyPostop] = []  # Убедитесь, что это уже есть

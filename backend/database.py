@@ -70,6 +70,8 @@ class MammographyFinding(Base):
 
     asymmetry_type = Column(String(50))
 
+    calcification_in_structure = Column(String(50))
+
     calcification_malignancy = Column(String(50))
     calcification_morphology = Column(String(100))
     calcification_distribution = Column(String(50))
@@ -118,6 +120,7 @@ class ContrastMammographyLEFinding(Base):
     id = Column(Integer, primary_key=True, index=True)
     contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
     finding_number = Column(Integer, nullable=True)
+    affected_side = Column(String(50))
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
     finding_type = Column(String(100))
@@ -127,6 +130,8 @@ class ContrastMammographyLEFinding(Base):
     mass_density = Column(String(50))
 
     asymmetry_type = Column(String(50))
+
+    calcification_in_structure = Column(String(50))
 
     calcification_malignancy = Column(String(50))
     calcification_morphology = Column(String(100))
@@ -159,6 +164,7 @@ class ContrastMammographyRCFinding(Base):
     id = Column(Integer, primary_key=True, index=True)
     contrast_mammo_id = Column(Integer, ForeignKey("contrast_mammographies.id"), nullable=False)
     finding_number = Column(Integer, nullable=True)
+    affected_side = Column(String(50))
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
     finding_type = Column(String(100))
@@ -306,8 +312,6 @@ class MRT(Base):
     lymph_nodes = relationship("MRTLymphNode", back_populates="mrt", cascade="all, delete-orphan")
 
 
-# Добавьте новые классы после MRT:
-
 class MRTFinding(Base):
     """Находки при МРТ молочных желез"""
     __tablename__ = "mrt_findings"
@@ -396,12 +400,34 @@ class HistologyBiopsyFinding(Base):
     id = Column(Integer, primary_key=True, index=True)
     histology_biopsy_id = Column(Integer, ForeignKey("histology_biopsies.id"), nullable=False)
     finding_number = Column(Integer, nullable=True)
+
+    # Локализация находки
+    finding_location = Column(String(100))  # "Молочная железа" или "Лимфатический узел"
+
     affected_side = Column(String(50))
     quadrant_location = Column(String(50))
     depth_location = Column(String(50))
-    classification_group = Column(Text)
-    classification_type = Column(Text)
+
+    # Группа измененных ЛУ
+    lymph_node_group = Column(String(100))  # Заполняется только если finding_location = "Лимфатический узел"
+
+    # Морфологическое заключение (текст)
+    morphological_conclusion = Column(Text)
+
+    # Классификация опухоли МЖ ВОЗ 2019 (единый список)
+    who_classification = Column(Text)
+
+    # Гистологическая степень злокачественности
     malignancy_degree = Column(Text)
+
+    # Заключение по ИГХ (текст)
+    ihc_conclusion = Column(Text)
+
+    # ИГХ маркеры
+    er_value = Column(String(50))  # ER (число или текст)
+    pr_value = Column(String(50))  # PR (число или текст)
+    her2_value = Column(String(50))  # HER2 (число или текст)
+    ki67_value = Column(String(50))  # Ki-67 (число или текст)
 
     histology_biopsy = relationship("HistologyBiopsy", back_populates="findings")
 
@@ -433,18 +459,60 @@ class CytologyBiopsyFinding(Base):
     cytology_biopsy = relationship("CytologyBiopsy", back_populates="findings")
 
 
+class HistologyPostopFinding(Base):
+    __tablename__ = "histology_postop_findings"
+    id = Column(Integer, primary_key=True, index=True)
+    histology_postop_id = Column(Integer, ForeignKey("histology_postops.id"), nullable=False)
+    finding_number = Column(Integer, nullable=True)
+
+    # Локализация находки
+    finding_location = Column(String(100))  # "Молочная железа" или "Лимфатический узел"
+
+    affected_side = Column(String(50))
+    quadrant_location = Column(String(50))
+    depth_location = Column(String(50))
+
+    # Группа измененных ЛУ
+    lymph_node_group = Column(String(100))
+
+    # Морфологическое заключение (текст)
+    morphological_conclusion = Column(Text)
+
+    # Классификация опухоли МЖ ВОЗ 2019
+    who_classification = Column(Text)
+
+    # Гистологическая степень злокачественности
+    malignancy_degree = Column(Text)
+
+    # Заключение по ИГХ (текст)
+    ihc_conclusion = Column(Text)
+
+    # ИГХ маркеры
+    er_value = Column(String(50))
+    pr_value = Column(String(50))
+    her2_value = Column(String(50))
+    ki67_value = Column(String(50))
+
+    # Размеры
+    size_1_mm = Column(Integer)
+    size_2_mm = Column(Integer)
+    size_3_mm = Column(Integer)
+    volume_mm3 = Column(Integer)
+    size_max_mm = Column(Integer)
+    size_min_mm = Column(Integer)
+
+    histology_postop = relationship("HistologyPostop", back_populates="findings")
+
+
 class HistologyPostop(Base):
     __tablename__ = "histology_postops"
 
     id = Column(Integer, primary_key=True, index=True)
     patient_id = Column(String(50), ForeignKey("patients.id"), nullable=False)
     exam_date = Column(Date, nullable=False)
-    findings = Column(Text)
-    ihc_results = Column(Text)
-    comment = Column(Text)
+    findings = relationship("HistologyPostopFinding", back_populates="histology_postop", cascade="all, delete-orphan")
 
     patient = relationship("Patient", back_populates="histology_postops")
-
 
 def init_db():
     Base.metadata.create_all(bind=engine)
