@@ -11,6 +11,7 @@
           <span v-if="!exporting">📋 Экспорт отчёта по образованиям</span>
           <span v-else>⏳ Экспорт...</span>
         </button>
+        <button @click="showReportBuilder = true" class="btn btn-warning">🔧 Вариативный отчёт</button>
         <button @click="showAddModal = true" class="btn btn-primary">Добавить пациента</button>
       </div>
     </div>
@@ -162,17 +163,22 @@
         </form>
       </div>
     </div>
+
+    <ReportBuilderModal v-if="showReportBuilder" @close="showReportBuilder = false" />
   </div>
 </template>
 
 <script>
 import api from '../api'
 import * as XLSX from 'xlsx'
+import ReportBuilderModal from './ReportBuilderModal.vue'
 
 export default {
+  components: { ReportBuilderModal },
   data() {
     return {
       patients: [],
+      showReportBuilder: false,
       filters: {
         last_name: '',
         first_name: '',
