@@ -335,16 +335,19 @@
               <div class="form-row">
                 <div class="form-group">
                   <label>Размер X (мм)</label>
-                  <input v-model.number="lymphNodeForm.size_x_mm" type="number" min="1" class="input">
+                  <input v-model.number="lymphNodeForm.size_x_mm" @input="calculateLymphNodeVolume" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
                   <label>Размер Y (мм)</label>
-                  <input v-model.number="lymphNodeForm.size_y_mm" type="number" min="1" class="input">
+                  <input v-model.number="lymphNodeForm.size_y_mm" @input="calculateLymphNodeVolume" type="number" min="1" class="input">
                 </div>
                 <div class="form-group">
                   <label>Размер Z (мм)</label>
-                  <input v-model.number="lymphNodeForm.size_z_mm" type="number" min="1" class="input">
+                  <input v-model.number="lymphNodeForm.size_z_mm" @input="calculateLymphNodeVolume" type="number" min="1" class="input">
                 </div>
+              </div>
+              <div v-if="lymphNodeForm.volume_mm3" class="calculated-metrics">
+                <div><strong>Объём:</strong> {{ lymphNodeForm.volume_mm3 }} мм³</div>
               </div>
 
               <div class="form-row">
@@ -574,6 +577,7 @@ export default {
         size_x_mm: null,
         size_y_mm: null,
         size_z_mm: null,
+        volume_mm3: null,
         medulla_echogenicity: '',
         cortex_echogenicity: '',
         has_widened_cortex: '',
@@ -615,6 +619,16 @@ export default {
       } else {
         // Сбрасываем значения если не все размеры заполнены
         this.findingForm.volume_mm3 = null;
+      }
+    },
+    calculateLymphNodeVolume() {
+      const x = this.lymphNodeForm.size_x_mm
+      const y = this.lymphNodeForm.size_y_mm
+      const z = this.lymphNodeForm.size_z_mm
+      if (x && y && z) {
+        this.lymphNodeForm.volume_mm3 = Math.round((4 / 3) * Math.PI * (x / 2) * (y / 2) * (z / 2))
+      } else {
+        this.lymphNodeForm.volume_mm3 = null
       }
     },
     onFindingTypeChange() {

@@ -267,6 +267,7 @@ class UltrasoundLymphNodeBase(BaseModel):
     size_x_mm: Optional[int] = None
     size_y_mm: Optional[int] = None
     size_z_mm: Optional[int] = None
+    volume_mm3: Optional[int] = None
     medulla_echogenicity: Optional[str] = None
     cortex_echogenicity: Optional[str] = None
     has_widened_cortex: Optional[str] = None

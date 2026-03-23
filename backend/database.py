@@ -22,7 +22,7 @@ class Patient(Base):
     gender = Column(String(20), nullable=False)
     date_of_birth = Column(Date, nullable=False)
     diagnosis = Column(Text)
-    tnm_stage = Column(String(100))
+    tnm_stage = Column(Text)
     mkb_code = Column(Text)
     comment = Column(Text)
     last_updated = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -274,6 +274,7 @@ class UltrasoundLymphNode(Base):
     size_x_mm = Column(Integer)
     size_y_mm = Column(Integer)
     size_z_mm = Column(Integer)
+    volume_mm3 = Column(Integer)
 
     # Эхогенность
     medulla_echogenicity = Column(String(50))  # Эхогенность мозгового отдела
