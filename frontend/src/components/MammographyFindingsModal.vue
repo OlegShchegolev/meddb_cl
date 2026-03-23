@@ -461,11 +461,8 @@ export default {
       }
       this.showAddFinding = true
 
-      // Пересчитать метрики если это объемное образование
-      if (this.findingForm.finding_type === 'Объемное образование' &&
-          this.findingForm.size_x_mm &&
-          this.findingForm.size_y_mm &&
-          this.findingForm.size_z_mm) {
+      // Пересчитать метрики для типов с размерами
+      if (this.findingForm.finding_type !== 'Сопутствующие признаки') {
         this.calculateMetrics();
       }
     },
@@ -480,8 +477,8 @@ export default {
               : null
         }
 
-        // Для не-объемных образований очищаем отдельные размеры
-        if (this.findingForm.finding_type !== 'Объемное образование') {
+        // Для сопутствующих признаков размеры не применимы
+        if (this.findingForm.finding_type === 'Сопутствующие признаки') {
           data.size_x_mm = null;
           data.size_y_mm = null;
           data.size_z_mm = null;
