@@ -228,7 +228,7 @@
             </div>
 
             <!-- Поля для "Сопутствующие изменения" -->
-            <div v-if="findingForm.finding_type === 'Сопутствующие признаки'" class="finding-details">
+            <div v-if="findingForm.finding_type === 'Сопутствующие изменения'" class="finding-details">
               <h5>Сопутствующие изменения</h5>
               <div class="form-group">
                 <label>Вид признака (можно выбрать несколько)</label>
@@ -462,7 +462,7 @@ export default {
       this.showAddFinding = true
 
       // Пересчитать метрики для типов с размерами
-      if (this.findingForm.finding_type !== 'Сопутствующие признаки') {
+      if (this.findingForm.finding_type !== 'Сопутствующие изменения') {
         this.calculateMetrics();
       }
     },
@@ -472,13 +472,13 @@ export default {
         const data = {
           ...this.findingForm,
           mammography_id: this.mammography.id,
-          associated_feature: this.findingForm.finding_type === 'Сопутствующие признаки'
+          associated_feature: this.findingForm.finding_type === 'Сопутствующие изменения'
               ? JSON.stringify(this.selectedFeatures)
               : null
         }
 
         // Для сопутствующих признаков размеры не применимы
-        if (this.findingForm.finding_type === 'Сопутствующие признаки') {
+        if (this.findingForm.finding_type === 'Сопутствующие изменения') {
           data.size_x_mm = null;
           data.size_y_mm = null;
           data.size_z_mm = null;
