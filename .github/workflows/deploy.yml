@@ -17,6 +17,7 @@ jobs:
           script: |
             cd /home/shchegolev/meddb_cl
             git fetch origin
+            git stash --include-untracked
             git checkout master
             git reset --hard origin/master
             docker compose up -d --build
