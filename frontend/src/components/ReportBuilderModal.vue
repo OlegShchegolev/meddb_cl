@@ -505,7 +505,11 @@ export default {
     },
     getVolume(f, m) {
       if (!m.hasVolume) return null
-      return f.volume_mm3 || null
+      if (f.volume_mm3) return f.volume_mm3
+      if (f.size_x_mm && f.size_y_mm && f.size_z_mm) {
+        return Math.round(Math.PI / 6 * f.size_x_mm * f.size_y_mm * f.size_z_mm)
+      }
+      return null
     },
 
     computeStats(findings, modDef) {
